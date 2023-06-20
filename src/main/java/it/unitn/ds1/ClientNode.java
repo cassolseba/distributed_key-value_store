@@ -1,7 +1,13 @@
 package it.unitn.ds1;
+import java.io.Serializable;
+
 import akka.actor.*;
+import it.unitn.ds1.DataNode.AskReadData;
+import it.unitn.ds1.DataNode.AskWriteData;
+import it.unitn.ds1.DataNode.SendRead2Client;
 
 public class ClientNode extends AbstractActor {
+    private Integer Id = 0;
 
     public ClientNode() {}
 
@@ -9,9 +15,58 @@ public class ClientNode extends AbstractActor {
         return Props.create(ClientNode.class, () -> new ClientNode());
     }
 
+
+    ////////////
+    // MESSAGES
+    ///////////
+
+    public static class ClientWrite implements Serializable {
+        public final Integer key;
+        public final String value;
+        public final ActorRef coordinator;
+        public ClientWrite(Integer key, String value, ActorRef coordinator) {
+            this.key = key; this.value = value;
+            this.coordinator = coordinator;
+        }
+    }
+
+    public static class ClientRead implements Serializable {
+        public final Integer key;
+        public final ActorRef coordinator;
+        public ClientRead(Integer key, ActorRef coordinator) {
+            this.key = key;
+            this.coordinator = coordinator;
+        }
+    }
+
+
+    ////////////
+    // HANDLERS
+    ////////////
+
+    public void onClientWrite(ClientWrite msg) {
+        AskWriteData data = new AskWriteData(msg.key, msg.value);
+        msg.coordinator.tell(data, self());
+    }
+
+    public void onClientRead(ClientRead msg) {
+        String requestId = self().path() + this.Id.toString();
+        AskReadData data = new AskReadData(msg.key, requestId);
+        System.out.println("Client " + self().path() + ", create request[" +
+                requestId + "]" + " for key:" + msg.key);
+        msg.coordinator.tell(data, self());
+    }
+
+    public void onSendRead2Client(SendRead2Client msg) {
+        System.out.println("Client " + self().path() + " received value: " + msg.value);
+    }
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
+            .match(ClientWrite.class, this::onClientWrite)
+            .match(ClientRead.class, this::onClientRead)
+            .match(SendRead2Client.class, this::onSendRead2Client)
             .build();
     }
 }

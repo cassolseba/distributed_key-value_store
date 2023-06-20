@@ -1,6 +1,5 @@
 package it.unitn.ds1;
 
-import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
@@ -8,54 +7,69 @@ import akka.japi.Pair;
 import java.util.*;
 import java.io.IOException;
 
-import it.unitn.ds1.DataNode.AskWriteData;
+import it.unitn.ds1.ClientNode.ClientRead;
+import it.unitn.ds1.ClientNode.ClientWrite;
 import it.unitn.ds1.DataNode.InitializeDataGroup;
+import it.unitn.ds1.GroupManager.DataNodeRef;
 
 public class DistributedKeyValueStore {
     public static void main(String[] args) {
         final int N_dataNode = 10;
         final int N_dataElem = 20;
+        final int N_clients = 3;
 
         final int N_replica = 3;
-        final int W_quorum = 6;
-        final int R_quorum = 6;
+        final int W_quorum = 2;
+        final int R_quorum = 2;
         final int maxTimeout = 1000;
 
         final ActorSystem system = ActorSystem.create("DKVSsystem");
 
-        // create group
-        List<Pair<Integer, ActorRef>> group = new ArrayList<>();
+        // create datanodes group
+        List<DataNodeRef> group = new ArrayList<>();
         Random rand = new Random(1337);
         int nodeKey = 1;
         int maxNodeKey = 1;
         for (int i=0; i<N_dataNode; i++) {
             ActorRef actorRef = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, nodeKey), "datanode"+i);
-            group.add(new Pair<Integer, ActorRef>(nodeKey, actorRef));
+            group.add(new DataNodeRef(nodeKey, actorRef));
 
-            nodeKey += rand.nextInt(8, 15);
             maxNodeKey = nodeKey;
+            nodeKey += rand.nextInt(8, 15);
         }
-        Collections.sort(group, Comparator.comparing(p -> p.first()));
 
         // send initilization to datanodes
         InitializeDataGroup initMsg = new InitializeDataGroup(group);
-        for (Pair<Integer, ActorRef> elem: group) {
-           elem.second().tell(initMsg, ActorRef.noSender());
+        for (DataNodeRef elem: group) {
+           elem.getActorRef().tell(initMsg, ActorRef.noSender());
         }
 
         inputContinue();
 
-        AskWriteData test = new AskWriteData(80, "CIAO");
-        ActorRef coordinator = group.get(0).second();
-        coordinator.tell(test, ActorRef.noSender());
+        // create the clients
+        List<ActorRef> clients = new ArrayList<>();
+        for (int i=0; i<N_clients; i++) {
+            clients.add(system.actorOf(ClientNode.props(), "clientNode"+i));
+        }
 
-        inputContinue();
-
+        // write data into datanodes by clients
         for (int i=0; i<N_dataElem; i++) {
-            Integer dataKey = rand.nextInt(1, maxNodeKey);
-            AskWriteData msg = new AskWriteData(dataKey, dataKey.toString());
-            coordinator.tell(msg, ActorRef.noSender());
+            // create random data
+            Integer dataKey = rand.nextInt(1, maxNodeKey+5);
+            // select random datanodes (coordinator)
+            ActorRef coordinator = group.get(rand.nextInt(group.size())).getActorRef();
+            // select random client
+            ActorRef client = clients.get(rand.nextInt(clients.size()));
+
+            ClientWrite msg = new ClientWrite(dataKey, "DATA"+dataKey.toString(), coordinator);
+            client.tell(msg, ActorRef.noSender());
         }
+
+        inputContinue();
+
+        // try read
+        ActorRef client = clients.get(0);
+        client.tell(new ClientRead(95, group.get(0).getActorRef()), ActorRef.noSender());
 
         inputContinue();
 

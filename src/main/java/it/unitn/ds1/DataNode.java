@@ -1,32 +1,24 @@
 package it.unitn.ds1;
 import akka.actor.*;
-import akka.io.Tcp.Write;
-import akka.japi.pf.ReceiveBuilder;
-import akka.japi.Pair;
+import it.unitn.ds1.GroupManager.DataNodeRef;
+import it.unitn.ds1.RequestManager.MRequestType;
 
 import java.io.Serializable;
 import java.util.*;
 
-import javax.xml.crypto.Data;
-
 public class DataNode extends AbstractActor {
-    private final int W_quorum;
-    private final int R_quorum;
-    private final int N_replica;
-    private int N_dataNode;
     private final int maxTimeout; // in ms
     public final Integer nodeKey; // Node key
-    private final Map<Integer, Pair<String, Integer>> dataStore; // key - value - version
-    private final List<Pair<Integer, ActorRef>> group; // must be always sorted
+    private final DataManager nodeData;
+    private final GroupManager groupM;
+    private final RequestManager rManager;
 
     public DataNode(int W_quorum, int R_quorum, int N_replica, int maxTimeout, int nodeKey) {
-        this.W_quorum = W_quorum;
-        this.R_quorum = R_quorum;
-        this.N_replica = N_replica;
         this.maxTimeout = maxTimeout;
         this.nodeKey = nodeKey;
-        this.dataStore = new HashMap<>();
-        this.group = new ArrayList<>();
+        this.rManager = new RequestManager(W_quorum, R_quorum);
+        this.nodeData = new DataManager();
+        this.groupM = new GroupManager(N_replica);
 
         System.out.println("DataNode " + self().path().name() + " created, nodeKey=" + nodeKey);
     }
@@ -35,14 +27,15 @@ public class DataNode extends AbstractActor {
         return Props.create(DataNode.class, () -> new DataNode(W_quorum, R_quorum, N_replica, maxTimeout, nodeKey));
     }
 
+
     ////////////
     // MESSAGES
     ///////////
 
     // Start message to initialize the datanode groups
     public static class InitializeDataGroup implements Serializable {
-        public final List<Pair<Integer, ActorRef>> group;
-        public InitializeDataGroup(List<Pair<Integer, ActorRef>> group) {
+        public final List<DataNodeRef> group;
+        public InitializeDataGroup(List<DataNodeRef> group) {
             this.group = Collections.unmodifiableList(new ArrayList<>(group));
         }
     }
@@ -63,30 +56,84 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    public static class AskReadData implements Serializable {
+        public final Integer key;
+        public final String requestId;
+        public AskReadData(Integer key, String requestId) {
+            this.key = key; this.requestId = requestId;
+        }
+    }
+
+    public static class ReadData implements Serializable {
+        public final Integer key;
+        public final String requestId;
+        public ReadData(Integer key, String requestId) {
+            this.key = key; this.requestId = requestId;
+        }
+    }
+
+    public static class SendRead implements Serializable {
+        public final String value;
+        public final String requestId;
+        public SendRead(String value, String requestId) {
+            this.value = value; this.requestId = requestId;
+        }
+    }
+
+    public static class SendRead2Client implements Serializable {
+        public final String value;
+        public final String requestId;
+        public SendRead2Client(String value, String requestId) {
+            this.value = value; this.requestId = requestId;
+        }
+    }
+
+
     ////////////
     // HANDLERS
     ////////////
 
     public void onInitializeDataGroup(InitializeDataGroup msg) {
-        this.group.addAll(msg.group);
-        Collections.sort(this.group, Comparator.comparing(p -> p.first()));
-        this.N_dataNode = group.size();
+        groupM.add(msg.group);
     }
 
     public void onAskWriteData(AskWriteData msg) {
-        int i=0;
-        if (this.group.get(this.group.size()-1).first() > msg.key)
-            for (;this.group.get(i).first()<msg.key; i++) {}
-        for (int j=0; j<N_replica; j++) {
+        for (ActorRef node : groupM.findDataNodes(msg.key)) {
             WriteData data = new WriteData(msg.key, msg.value);
-            this.group.get(i).second().tell(data, self());
-            i = (i+1) % N_dataNode;
+            node.tell(data, self());
         }
     }
 
-    public void onWriteData(WriteData data) {
-        dataStore.put(data.key, new Pair<String, Integer>(data.value, 1));
-        System.out.println("DataNode " + self().path().name() + ": data (" + data.key + "," + data.value + ") saved");
+    public void onWriteData(WriteData msg) {
+        nodeData.put(msg.key, msg.value);
+        DataManager.Data elem = nodeData.get(msg.key);
+        System.out.println("DataNode " + self().path().name() + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+    }
+
+    public void onAskReadData(AskReadData msg) {
+        rManager.create(msg.requestId, getSender(), MRequestType.READER);
+        for (ActorRef node : groupM.findDataNodes(msg.key)) {
+            ReadData request = new ReadData(msg.key, msg.requestId);
+            node.tell(request, self());
+        }
+    }
+
+    public void onReadData(ReadData msg) {
+        String value = nodeData.getValue(msg.key);
+        getSender().tell(new SendRead(value, msg.requestId), self());
+    }
+
+    public void onSendRead(SendRead msg) {
+        switch (rManager.add(msg.requestId, msg.value)) {
+            case OK -> {
+                // System.out.println("sending");
+                ActorRef client = rManager.getActorRef(msg.requestId);
+                String requestedValue = rManager.getValue(msg.requestId);
+                SendRead2Client resp = new SendRead2Client(requestedValue, msg.requestId);
+                client.tell(resp, self());
+            }
+            default -> {}
+        }
     }
 
     @Override
@@ -95,6 +142,9 @@ public class DataNode extends AbstractActor {
             .match(InitializeDataGroup.class, this::onInitializeDataGroup)
             .match(AskWriteData.class, this::onAskWriteData)
             .match(WriteData.class, this::onWriteData)
+            .match(AskReadData.class, this::onAskReadData)
+            .match(ReadData.class, this::onReadData)
+            .match(SendRead.class, this::onSendRead)
             .build();
     }
 }
