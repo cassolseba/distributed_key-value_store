@@ -77,6 +77,8 @@ public class RequestManager {
 
     public RMresponse add(String requestId, Data data) {
         RequestStruct state = requests.get(requestId);
+        if (state == null)
+            return RMresponse.NOTHING;
         if (state.update(data)) {
             return RMresponse.OK;
         }
@@ -87,8 +89,10 @@ public class RequestManager {
         return requests.get(requestId).client;
     }
 
-    public String getValue(String requestId) {
-        return requests.get(requestId).getQuoredValue();
+    public String getValueAndRemove(String requestId) {
+        String value = requests.get(requestId).getQuoredValue();
+        requests.remove(requestId);
+        return value;
     }
 
 

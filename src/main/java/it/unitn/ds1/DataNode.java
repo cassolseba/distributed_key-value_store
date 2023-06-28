@@ -129,7 +129,7 @@ public class DataNode extends AbstractActor {
             case OK -> {
                 // System.out.println("sending");
                 ActorRef client = rManager.getActorRef(msg.requestId);
-                String requestedValue = rManager.getValue(msg.requestId);
+                String requestedValue = rManager.getValueAndRemove(msg.requestId);
                 SendRead2Client resp = new SendRead2Client(requestedValue, msg.requestId);
                 client.tell(resp, self());
             }
