@@ -89,6 +89,47 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    public static class AskUpdateData implements Serializable {
+        public final Integer key;
+        public final String value;
+        public final String requestId;
+        public AskUpdateData(Integer key, String value, String requestId) {
+            this.key = key; this.value = value; this.requestId = requestId;
+        }
+    }
+
+    public static class AskVersion implements Serializable {
+        public final Integer key;
+        public final String requestId;
+        public AskVersion(Integer key, String requestId) {
+            this.key = key; this.requestId = requestId;
+        }
+    }
+
+    public static class SendVersion implements Serializable {
+        public final Integer version;
+        public final String requestId;
+        public SendVersion(Integer version, String requestId) {
+            this.version = version; this.requestId = requestId;
+        }
+    }
+
+    public static class SendUpdate2Client implements Serializable {
+        public final Integer version;
+        public final String requestId;
+        public SendUpdate2Client(Integer version, String requestId) {
+            this.version = version; this.requestId = requestId;
+        }
+    }
+
+    public static class UpdateData implements Serializable {
+        public final Integer key;
+        public final String value;
+        public final Integer version;
+        public UpdateData(Integer key, String value, Integer version) {
+            this.key = key; this.value = value; this.version = version;
+        }
+    }
 
     ////////////
     // HANDLERS
@@ -137,6 +178,53 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    public void onAskUpdateData(AskUpdateData msg) {
+        rManager.create(msg.requestId, getSender(), MRequestType.UPDATE);
+        rManager.addUpdate(msg.requestId, msg.value, msg.key);
+        for (ActorRef node : groupM.findDataNodes(msg.key)) {
+            AskVersion request = new AskVersion(msg.key, msg.requestId);
+            node.tell(request, self());
+        }
+    }
+
+    public void onAskVersion(AskVersion msg) {
+        Data readedData = nodeData.get(msg.key);
+        getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
+    }
+
+    public void onSendVersion(SendVersion msg) {
+        switch (rManager.add(msg.requestId, msg.version)) {
+            case OK -> {
+                ActorRef client = rManager.getActorRef(msg.requestId);
+
+                Integer key = rManager.getUpdateKey(msg.requestId);
+                String value = rManager.getUpdateValue(msg.requestId);
+                Integer version = rManager.getVersionAndRemove(msg.requestId);
+
+                // increase the version to 1 in respect to the quored one
+                version += 1;
+                // send the fetched version to the client
+                SendUpdate2Client resp = new SendUpdate2Client(version, msg.requestId);
+                client.tell(resp, self());
+
+                // tell all datanodes to write the updated data
+                for (ActorRef node : groupM.findDataNodes(key)) {
+                    UpdateData data = new UpdateData(key, value, version);
+                    node.tell(data, self());
+                }
+            }
+
+            default -> {}
+        }
+
+    }
+
+    public void onUpdateData(UpdateData msg) {
+        nodeData.putUpdate(msg.key, msg.value, msg.version);
+        DataManager.Data elem = nodeData.get(msg.key);
+        System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+    }
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -146,6 +234,10 @@ public class DataNode extends AbstractActor {
             .match(AskReadData.class, this::onAskReadData)
             .match(ReadData.class, this::onReadData)
             .match(SendRead.class, this::onSendRead)
+            .match(AskUpdateData.class, this::onAskUpdateData)
+            .match(AskVersion.class, this::onAskVersion)
+            .match(SendVersion.class, this::onSendVersion)
+            .match(UpdateData.class, this::onUpdateData)
             .build();
     }
 }

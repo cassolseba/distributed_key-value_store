@@ -7,8 +7,7 @@ import akka.japi.Pair;
 import java.util.*;
 import java.io.IOException;
 
-import it.unitn.ds1.ClientNode.ClientRead;
-import it.unitn.ds1.ClientNode.ClientWrite;
+import it.unitn.ds1.ClientNode.*;
 import it.unitn.ds1.DataNode.InitializeDataGroup;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 
@@ -70,6 +69,11 @@ public class DistributedKeyValueStore {
         // try read
         ActorRef client = clients.get(0);
         client.tell(new ClientRead(95, group.get(0).getActorRef()), ActorRef.noSender());
+
+        inputContinue();
+
+        // try update
+        client.tell(new ClientUpdate(95, "DATA95-UPDATED", group.get(0).getActorRef()), ActorRef.noSender());
 
         inputContinue();
 

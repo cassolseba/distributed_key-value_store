@@ -3,6 +3,7 @@ import java.util.HashMap;
 
 import akka.actor.*;
 import it.unitn.ds1.DataManager.Data;
+import scala.Int;
 
 import java.util.*;
 
@@ -27,12 +28,15 @@ public class RequestManager {
         private Integer totalCounter;
         private final int quorumVal;
         private final ActorRef client;
-        private MRequestType type;
         //                    version, counter
         private final HashMap<Integer, Integer> counterMap;
         //                    version, value
         private final HashMap<Integer, String> valueMap;
         private String quoredValue;
+
+        private Integer quoredVersion;
+        private String updateValue;
+        private Integer updateKey;
 
         public RequestStruct(ActorRef client, String requestId, MRequestType type) {
             switch (type) {
@@ -42,15 +46,16 @@ public class RequestManager {
             }
             this.client = client;
             this.totalCounter = 0;
-            this.type = type;
             this.counterMap = new HashMap<>();
             this.valueMap = new HashMap<>();
         }
 
-        public String getQuoredValue() {
-            return quoredValue;
-        }
+        public String getQuoredValue() { return quoredValue; }
+        public Integer getQuoredVersion() { return quoredVersion; }
+        public String getUpdateValue() { return updateValue; }
+        public Integer getUpdateKey() { return updateKey; }
 
+        // used in reading
         public Boolean update(Data data) {
             totalCounter++;
             valueMap.put(data.getVersion(), data.getValue());
@@ -58,6 +63,19 @@ public class RequestManager {
 
            if (counterMap.get(data.getVersion()) > quorumVal) {
                 quoredValue = valueMap.get(data.getVersion());
+                return true;
+           }
+           else
+               return false;
+        }
+
+        // used in updating
+        public Boolean update(Integer version) {
+            totalCounter++;
+            counterMap.put(version, counterMap.getOrDefault(version, 0) + 1);
+
+           if (counterMap.get(version) > quorumVal) {
+                quoredVersion = version;
                 return true;
            }
            else
@@ -75,11 +93,31 @@ public class RequestManager {
         requests.put(requestId, new RequestStruct(client, requestId, type));
     }
 
+    // used in reading the data
     public RMresponse add(String requestId, Data data) {
         RequestStruct state = requests.get(requestId);
         if (state == null)
             return RMresponse.NOTHING;
         if (state.update(data)) {
+            return RMresponse.OK;
+        }
+        return RMresponse.NOTHING;
+    }
+
+    // used in updating the data
+    public void addUpdate(String requestId, String value, Integer key) {
+        RequestStruct state = requests.get(requestId);
+        if (state == null)
+            return;
+        state.updateValue = value;
+        state.updateKey = key;
+    }
+
+    public RMresponse add(String requestId, Integer version) {
+        RequestStruct state = requests.get(requestId);
+        if (state == null)
+            return RMresponse.NOTHING;
+        if (state.update(version)) {
             return RMresponse.OK;
         }
         return RMresponse.NOTHING;
@@ -95,5 +133,19 @@ public class RequestManager {
         return value;
     }
 
+    public Integer getVersionAndRemove(String requestId) {
+        Integer version = requests.get(requestId).getQuoredVersion();
+        requests.remove(requestId);
+        return version;
+    }
 
+    public String getUpdateValue(String requestId) {
+        String update = requests.get(requestId).getUpdateValue();
+        return update;
+    }
+
+    public Integer getUpdateKey(String requestId) {
+        Integer update = requests.get(requestId).getUpdateKey();
+        return update;
+    }
 }
