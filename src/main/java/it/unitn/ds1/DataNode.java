@@ -1,6 +1,7 @@
 package it.unitn.ds1;
 import akka.actor.*;
 import it.unitn.ds1.GroupManager.DataNodeRef;
+import it.unitn.ds1.DataManager.Data;
 import it.unitn.ds1.RequestManager.MRequestType;
 
 import java.io.Serializable;
@@ -73,10 +74,10 @@ public class DataNode extends AbstractActor {
     }
 
     public static class SendRead implements Serializable {
-        public final String value;
+        public final Data data;
         public final String requestId;
-        public SendRead(String value, String requestId) {
-            this.value = value; this.requestId = requestId;
+        public SendRead(Data data, String requestId) {
+            this.data = data; this.requestId = requestId;
         }
     }
 
@@ -119,12 +120,12 @@ public class DataNode extends AbstractActor {
     }
 
     public void onReadData(ReadData msg) {
-        String value = nodeData.getValue(msg.key);
-        getSender().tell(new SendRead(value, msg.requestId), self());
+        Data readedData = nodeData.get(msg.key);
+        getSender().tell(new SendRead(readedData, msg.requestId), self());
     }
 
     public void onSendRead(SendRead msg) {
-        switch (rManager.add(msg.requestId, msg.value)) {
+        switch (rManager.add(msg.requestId, msg.data)) {
             case OK -> {
                 // System.out.println("sending");
                 ActorRef client = rManager.getActorRef(msg.requestId);

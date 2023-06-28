@@ -24,13 +24,15 @@ public class RequestManager {
     }
 
     private class RequestStruct {
+        private Integer totalCounter;
         private final int quorumVal;
-        private int currentVal;
         private final ActorRef client;
-        private final String requestId;
         private MRequestType type;
-        private final List<Data> values;
-        public String test;
+        //                    version, counter
+        private final HashMap<Integer, Integer> counterMap;
+        //                    version, value
+        private final HashMap<Integer, String> valueMap;
+        private String quoredValue;
 
         public RequestStruct(ActorRef client, String requestId, MRequestType type) {
             switch (type) {
@@ -39,18 +41,25 @@ public class RequestManager {
                 default     -> this.quorumVal = W_quorum;
             }
             this.client = client;
-            this.requestId = requestId;
+            this.totalCounter = 0;
             this.type = type;
-            this.currentVal = 0;
-            this.values = new ArrayList<>();
+            this.counterMap = new HashMap<>();
+            this.valueMap = new HashMap<>();
         }
 
-        public Boolean update(String value) {
-           currentVal += 1;
-           test = value;
-           // System.out.println("currentVal: " + currentVal);
-           if (currentVal > quorumVal)
+        public String getQuoredValue() {
+            return quoredValue;
+        }
+
+        public Boolean update(Data data) {
+            totalCounter++;
+            valueMap.put(data.getVersion(), data.getValue());
+            counterMap.put(data.getVersion(), counterMap.getOrDefault(data.getVersion(), 0) + 1);
+
+           if (counterMap.get(data.getVersion()) > quorumVal) {
+                quoredValue = valueMap.get(data.getVersion());
                 return true;
+           }
            else
                return false;
         }
@@ -66,9 +75,9 @@ public class RequestManager {
         requests.put(requestId, new RequestStruct(client, requestId, type));
     }
 
-    public RMresponse add(String requestId, String value) {
+    public RMresponse add(String requestId, Data data) {
         RequestStruct state = requests.get(requestId);
-        if (state.update(value)) {
+        if (state.update(data)) {
             return RMresponse.OK;
         }
         return RMresponse.NOTHING;
@@ -79,7 +88,7 @@ public class RequestManager {
     }
 
     public String getValue(String requestId) {
-        return requests.get(requestId).test;
+        return requests.get(requestId).getQuoredValue();
     }
 
 
