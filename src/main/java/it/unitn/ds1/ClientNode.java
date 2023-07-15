@@ -9,6 +9,7 @@ import it.unitn.ds1.DataNode.SendRead2Client;
 import it.unitn.ds1.DataNode.SendUpdate2Client;
 
 public class ClientNode extends AbstractActor {
+    // used to identify a message
     private Integer Id = 0;
 
     public ClientNode() {}
@@ -21,6 +22,7 @@ public class ClientNode extends AbstractActor {
     // MESSAGES
     ///////////
 
+    // tell the client to start the write procedure
     public static class ClientWrite implements Serializable {
         public final Integer key;
         public final String value;
@@ -31,6 +33,7 @@ public class ClientNode extends AbstractActor {
         }
     }
 
+    // tell the client to start the read procedure
     public static class ClientRead implements Serializable {
         public final Integer key;
         public final ActorRef coordinator;
@@ -40,6 +43,7 @@ public class ClientNode extends AbstractActor {
         }
     }
 
+    // tell the cilent to start the update procedure
     public static class ClientUpdate implements Serializable {
         public final Integer key;
         public final String value;

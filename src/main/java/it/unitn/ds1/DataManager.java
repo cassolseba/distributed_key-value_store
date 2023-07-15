@@ -1,6 +1,8 @@
 package it.unitn.ds1;
 import java.util.*;
 
+// class used to manage the local data of datanode
+// instanciated by every datanode
 
 public class DataManager {
     private final Map<Integer, Data> storage; // key - (value - version)

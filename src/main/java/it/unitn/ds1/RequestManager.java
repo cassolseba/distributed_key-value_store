@@ -3,28 +3,28 @@ import java.util.HashMap;
 
 import akka.actor.*;
 import it.unitn.ds1.DataManager.Data;
-import scala.Int;
 
-import java.util.*;
+// class used to manage the client requests by the coordinators
+// instanciated by every datanode
+// store the information to know who to respond to and
+// manage the datanode response and quorums of each ongoing client request (read, update)
 
 public class RequestManager {
     private final int W_quorum;
     private final int R_quorum;
 
-    private final HashMap<String, RequestStruct> requests;
+    //                 requestId, requestStatus
+    private final HashMap<String, Wrequest> Wrequests;
+    private final HashMap<String, Rrequest> Rrequests;
 
     public RequestManager(int W_quorum, int R_quorum) {
        this.W_quorum = W_quorum;
        this.R_quorum = R_quorum;
-       this.requests = new HashMap<>();
+       this.Wrequests = new HashMap<>();
+       this.Rrequests = new HashMap<>();
     }
 
-    public enum MRequestType {
-        READER,
-        UPDATE
-    }
-
-    private class RequestStruct {
+    private class Rrequest {
         private Integer totalCounter;
         private final int quorumVal;
         private final ActorRef client;
@@ -34,16 +34,8 @@ public class RequestManager {
         private final HashMap<Integer, String> valueMap;
         private String quoredValue;
 
-        private Integer quoredVersion;
-        private String updateValue;
-        private Integer updateKey;
-
-        public RequestStruct(ActorRef client, String requestId, MRequestType type) {
-            switch (type) {
-                case READER -> this.quorumVal = R_quorum;
-                case UPDATE -> this.quorumVal = W_quorum;
-                default     -> this.quorumVal = W_quorum;
-            }
+        public Rrequest(ActorRef client) {
+            quorumVal = R_quorum;
             this.client = client;
             this.totalCounter = 0;
             this.counterMap = new HashMap<>();
@@ -51,11 +43,7 @@ public class RequestManager {
         }
 
         public String getQuoredValue() { return quoredValue; }
-        public Integer getQuoredVersion() { return quoredVersion; }
-        public String getUpdateValue() { return updateValue; }
-        public Integer getUpdateKey() { return updateKey; }
 
-        // used in reading
         public Boolean update(Data data) {
             totalCounter++;
             valueMap.put(data.getVersion(), data.getValue());
@@ -68,8 +56,31 @@ public class RequestManager {
            else
                return false;
         }
+    }
 
-        // used in updating
+    private class Wrequest {
+        private Integer totalCounter;
+        private final int quorumVal;
+        private final ActorRef client;
+        //                    version, counter
+        private final HashMap<Integer, Integer> counterMap;
+        private Integer quoredVersion;
+        private String updateValue;
+        private Integer updateKey;
+
+        public Wrequest(ActorRef client, Integer updateKey, String updateValue) {
+            quorumVal = W_quorum;
+            this.client = client;
+            this.totalCounter = 0;
+            this.counterMap = new HashMap<>();
+            this.updateKey = updateKey;
+            this.updateValue = updateValue;
+        }
+
+        public Integer getQuoredVersion() { return quoredVersion; }
+        public String getUpdateValue() { return updateValue; }
+        public Integer getUpdateKey() { return updateKey; }
+
         public Boolean update(Integer version) {
             totalCounter++;
             counterMap.put(version, counterMap.getOrDefault(version, 0) + 1);
@@ -89,13 +100,18 @@ public class RequestManager {
         NOT_OK
     }
 
-    public void create(String requestId, ActorRef client, MRequestType type) {
-        requests.put(requestId, new RequestStruct(client, requestId, type));
+    ////////////////////////////
+    // methods for read requests
+    ////////////////////////////
+
+    // initialize a new read quorum
+    public void createR(String requestId, ActorRef client) {
+        Rrequests.put(requestId, new Rrequest(client));
     }
 
-    // used in reading the data
-    public RMresponse add(String requestId, Data data) {
-        RequestStruct state = requests.get(requestId);
+    // used to add a read message
+    public RMresponse addR(String requestId, Data data) {
+        Rrequest state = Rrequests.get(requestId);
         if (state == null)
             return RMresponse.NOTHING;
         if (state.update(data)) {
@@ -104,17 +120,28 @@ public class RequestManager {
         return RMresponse.NOTHING;
     }
 
-    // used in updating the data
-    public void addUpdate(String requestId, String value, Integer key) {
-        RequestStruct state = requests.get(requestId);
-        if (state == null)
-            return;
-        state.updateValue = value;
-        state.updateKey = key;
+    public ActorRef getActorRefR(String requestId) {
+        return Rrequests.get(requestId).client;
     }
 
-    public RMresponse add(String requestId, Integer version) {
-        RequestStruct state = requests.get(requestId);
+    public String getValueAndRemoveR(String requestId) {
+        String value = Rrequests.get(requestId).getQuoredValue();
+        Rrequests.remove(requestId);
+        return value;
+    }
+
+    /////////////////////////////
+    // methods for write requests
+    /////////////////////////////
+
+    // initialize a new update quorum
+    public void createW(String requestId, ActorRef client, Integer updateKey, String updateValue) {
+        Wrequests.put(requestId, new Wrequest(client, updateKey, updateValue));
+    }
+
+    // used in add a update message
+    public RMresponse addW(String requestId, Integer version) {
+        Wrequest state = Wrequests.get(requestId);
         if (state == null)
             return RMresponse.NOTHING;
         if (state.update(version)) {
@@ -123,29 +150,23 @@ public class RequestManager {
         return RMresponse.NOTHING;
     }
 
-    public ActorRef getActorRef(String requestId) {
-        return requests.get(requestId).client;
+    public ActorRef getActorRefW(String requestId) {
+        return Wrequests.get(requestId).client;
     }
 
-    public String getValueAndRemove(String requestId) {
-        String value = requests.get(requestId).getQuoredValue();
-        requests.remove(requestId);
-        return value;
-    }
-
-    public Integer getVersionAndRemove(String requestId) {
-        Integer version = requests.get(requestId).getQuoredVersion();
-        requests.remove(requestId);
+    public Integer getVersionAndRemoveW(String requestId) {
+        Integer version = Wrequests.get(requestId).getQuoredVersion();
+        Wrequests.remove(requestId);
         return version;
     }
 
-    public String getUpdateValue(String requestId) {
-        String update = requests.get(requestId).getUpdateValue();
+    public String getUpdateValueW(String requestId) {
+        String update = Wrequests.get(requestId).getUpdateValue();
         return update;
     }
 
-    public Integer getUpdateKey(String requestId) {
-        Integer update = requests.get(requestId).getUpdateKey();
+    public Integer getUpdateKeyW(String requestId) {
+        Integer update = Wrequests.get(requestId).getUpdateKey();
         return update;
     }
 }

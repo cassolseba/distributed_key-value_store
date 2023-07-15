@@ -2,7 +2,6 @@ package it.unitn.ds1;
 import akka.actor.*;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 import it.unitn.ds1.DataManager.Data;
-import it.unitn.ds1.RequestManager.MRequestType;
 
 import java.io.Serializable;
 import java.util.*;
@@ -33,7 +32,7 @@ public class DataNode extends AbstractActor {
     // MESSAGES
     ///////////
 
-    // Start message to initialize the datanode groups
+    // used to initialize the datanode groups
     public static class InitializeDataGroup implements Serializable {
         public final List<DataNodeRef> group;
         public InitializeDataGroup(List<DataNodeRef> group) {
@@ -41,6 +40,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the client and received by the coordinator datanode
+    // used to start the write data procedure in the datanodes
     public static class AskWriteData implements Serializable {
         public final Integer key;
         public final String value;
@@ -49,6 +50,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator to the proper datanode
+    // used to tell at the datanode to write the data
     public static class WriteData implements Serializable {
         public final Integer key;
         public final String value;
@@ -57,6 +60,9 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the client and received by the coordinator datanode
+    // used to start the read data procedure in the datanodes
+    // requestId used to know who to answer the reading to
     public static class AskReadData implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -153,7 +159,7 @@ public class DataNode extends AbstractActor {
     }
 
     public void onAskReadData(AskReadData msg) {
-        rManager.create(msg.requestId, getSender(), MRequestType.READER);
+        rManager.createR(msg.requestId, getSender());
         for (ActorRef node : groupM.findDataNodes(msg.key)) {
             ReadData request = new ReadData(msg.key, msg.requestId);
             node.tell(request, self());
@@ -166,11 +172,11 @@ public class DataNode extends AbstractActor {
     }
 
     public void onSendRead(SendRead msg) {
-        switch (rManager.add(msg.requestId, msg.data)) {
+        switch (rManager.addR(msg.requestId, msg.data)) {
             case OK -> {
                 // System.out.println("sending");
-                ActorRef client = rManager.getActorRef(msg.requestId);
-                String requestedValue = rManager.getValueAndRemove(msg.requestId);
+                ActorRef client = rManager.getActorRefR(msg.requestId);
+                String requestedValue = rManager.getValueAndRemoveR(msg.requestId);
                 SendRead2Client resp = new SendRead2Client(requestedValue, msg.requestId);
                 client.tell(resp, self());
             }
@@ -179,8 +185,7 @@ public class DataNode extends AbstractActor {
     }
 
     public void onAskUpdateData(AskUpdateData msg) {
-        rManager.create(msg.requestId, getSender(), MRequestType.UPDATE);
-        rManager.addUpdate(msg.requestId, msg.value, msg.key);
+        rManager.createW(msg.requestId, getSender(), msg.key, msg.value);
         for (ActorRef node : groupM.findDataNodes(msg.key)) {
             AskVersion request = new AskVersion(msg.key, msg.requestId);
             node.tell(request, self());
@@ -193,13 +198,13 @@ public class DataNode extends AbstractActor {
     }
 
     public void onSendVersion(SendVersion msg) {
-        switch (rManager.add(msg.requestId, msg.version)) {
+        switch (rManager.addW(msg.requestId, msg.version)) {
             case OK -> {
-                ActorRef client = rManager.getActorRef(msg.requestId);
+                ActorRef client = rManager.getActorRefW(msg.requestId);
 
-                Integer key = rManager.getUpdateKey(msg.requestId);
-                String value = rManager.getUpdateValue(msg.requestId);
-                Integer version = rManager.getVersionAndRemove(msg.requestId);
+                Integer key = rManager.getUpdateKeyW(msg.requestId);
+                String value = rManager.getUpdateValueW(msg.requestId);
+                Integer version = rManager.getVersionAndRemoveW(msg.requestId);
 
                 // increase the version to 1 in respect to the quored one
                 version += 1;
