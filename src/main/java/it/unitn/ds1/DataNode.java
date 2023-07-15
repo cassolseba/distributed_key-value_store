@@ -1,6 +1,8 @@
 package it.unitn.ds1;
 import akka.actor.*;
 import it.unitn.ds1.GroupManager.DataNodeRef;
+import scala.concurrent.duration.Duration;
+import java.util.concurrent.TimeUnit;
 import it.unitn.ds1.DataManager.Data;
 
 import java.io.Serializable;
@@ -32,7 +34,7 @@ public class DataNode extends AbstractActor {
     // MESSAGES
     ///////////
 
-    // used to initialize the datanode groups
+    // used to initialize the datanode group
     public static class InitializeDataGroup implements Serializable {
         public final List<DataNodeRef> group;
         public InitializeDataGroup(List<DataNodeRef> group) {
@@ -71,6 +73,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator and received by the proper datanodes
+    // used to request to read the data to the proper datanodes
     public static class ReadData implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -79,6 +83,27 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator and received by the coordinator
+    // used to set a timout on a reading procedure
+    public static class TimeoutR implements Serializable {
+        public final String requestId;
+        public TimeoutR(String requestId) {
+            this.requestId = requestId;
+        }
+    }
+
+    // sended by the coordinator and received by the client
+    // used to tell the client that a timeout error occurred on the specified
+    // reading request
+    public static class SendTimeoutR2Client implements Serializable {
+        public final String requestId;
+        public SendTimeoutR2Client(String requestId) {
+            this.requestId = requestId;
+        }
+    }
+
+    // sended by the datanodes and received by the coordinator
+    // used to send the readed requested data to the coordinator
     public static class SendRead implements Serializable {
         public final Data data;
         public final String requestId;
@@ -87,6 +112,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator to the client
+    // used to send the properly readed data to the client that requested it
     public static class SendRead2Client implements Serializable {
         public final String value;
         public final String requestId;
@@ -95,6 +122,9 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the client and received by the coordinator datanode
+    // used to start the update data procedure in the datanodes
+    // requestId used to know who to answer the to
     public static class AskUpdateData implements Serializable {
         public final Integer key;
         public final String value;
@@ -104,6 +134,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator and received by the proper datanodes
+    // used to request to read the version of the specified data to the proper datanodes
     public static class AskVersion implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -112,6 +144,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the datanodes and received by the coordinator
+    // used to send the readed version of the specified data to the coordinator
     public static class SendVersion implements Serializable {
         public final Integer version;
         public final String requestId;
@@ -120,6 +154,27 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator and received by the coordinator
+    // used to set a timout on a reading procedure
+    public static class TimeoutW implements Serializable {
+        public final String requestId;
+        public TimeoutW(String requestId) {
+            this.requestId = requestId;
+        }
+    }
+
+    // sended by the coordinator and received by the client
+    // used to tell the client that a timeout error occurred on the specified
+    // reading request
+    public static class SendTimeoutW2Client implements Serializable {
+        public final String requestId;
+        public SendTimeoutW2Client(String requestId) {
+            this.requestId = requestId;
+        }
+    }
+
+    // sended by the coordinator to the client
+    // used to send the version of the updated data to the client that requested it
     public static class SendUpdate2Client implements Serializable {
         public final Integer version;
         public final String requestId;
@@ -128,6 +183,8 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the coordinator to the proper datanodes
+    // used to tell to the proper datanode to update the specified data
     public static class UpdateData implements Serializable {
         public final Integer key;
         public final String value;
@@ -164,6 +221,13 @@ public class DataNode extends AbstractActor {
             ReadData request = new ReadData(msg.key, msg.requestId);
             node.tell(request, self());
         }
+        getContext().system().scheduler().scheduleOnce(
+            Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
+            getSelf(),
+            new TimeoutR(msg.requestId),
+            getContext().system().dispatcher(), getSelf()
+        );
+
     }
 
     public void onReadData(ReadData msg) {
@@ -176,11 +240,20 @@ public class DataNode extends AbstractActor {
             case OK -> {
                 // System.out.println("sending");
                 ActorRef client = rManager.getActorRefR(msg.requestId);
-                String requestedValue = rManager.getValueAndRemoveR(msg.requestId);
+                String requestedValue = rManager.getValueR(msg.requestId);
+                rManager.removeR(msg.requestId);
                 SendRead2Client resp = new SendRead2Client(requestedValue, msg.requestId);
                 client.tell(resp, self());
             }
             default -> {}
+        }
+    }
+
+    public void onTimeoutR(TimeoutR msg) {
+        if(rManager.receiveTimeoutR(msg.requestId)) {
+            ActorRef client = rManager.getActorRefR(msg.requestId);
+            rManager.removeR(msg.requestId);
+            client.tell(new SendTimeoutR2Client(msg.requestId), self());
         }
     }
 
@@ -204,7 +277,8 @@ public class DataNode extends AbstractActor {
 
                 Integer key = rManager.getUpdateKeyW(msg.requestId);
                 String value = rManager.getUpdateValueW(msg.requestId);
-                Integer version = rManager.getVersionAndRemoveW(msg.requestId);
+                Integer version = rManager.getVersionW(msg.requestId);
+                rManager.removeW(msg.requestId);
 
                 // increase the version to 1 in respect to the quored one
                 version += 1;
@@ -221,7 +295,14 @@ public class DataNode extends AbstractActor {
 
             default -> {}
         }
+    }
 
+    public void onTimeoutW(TimeoutW msg) {
+        if(rManager.receiveTimeoutW(msg.requestId)) {
+            ActorRef client = rManager.getActorRefW(msg.requestId);
+            rManager.removeW(msg.requestId);
+            client.tell(new SendTimeoutW2Client(msg.requestId), self());
+        }
     }
 
     public void onUpdateData(UpdateData msg) {
@@ -238,10 +319,12 @@ public class DataNode extends AbstractActor {
             .match(WriteData.class, this::onWriteData)
             .match(AskReadData.class, this::onAskReadData)
             .match(ReadData.class, this::onReadData)
+            .match(TimeoutR.class, this::onTimeoutR)
             .match(SendRead.class, this::onSendRead)
             .match(AskUpdateData.class, this::onAskUpdateData)
             .match(AskVersion.class, this::onAskVersion)
             .match(SendVersion.class, this::onSendVersion)
+            .match(TimeoutW.class, this::onTimeoutW)
             .match(UpdateData.class, this::onUpdateData)
             .build();
     }

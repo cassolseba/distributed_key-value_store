@@ -2,11 +2,7 @@ package it.unitn.ds1;
 import java.io.Serializable;
 
 import akka.actor.*;
-import it.unitn.ds1.DataNode.AskReadData;
-import it.unitn.ds1.DataNode.AskUpdateData;
-import it.unitn.ds1.DataNode.AskWriteData;
-import it.unitn.ds1.DataNode.SendRead2Client;
-import it.unitn.ds1.DataNode.SendUpdate2Client;
+import it.unitn.ds1.DataNode.*;
 
 public class ClientNode extends AbstractActor {
     // used to identify a message
@@ -67,7 +63,7 @@ public class ClientNode extends AbstractActor {
     public void onClientRead(ClientRead msg) {
         String requestId = self().path() + this.Id.toString();
         AskReadData data = new AskReadData(msg.key, requestId);
-        System.out.println("Client " + self().path() + ", create request[" +
+        System.out.println("Client " + self().path() + ", create read request[" +
                 requestId + "]" + " for key:" + msg.key);
         msg.coordinator.tell(data, self());
     }
@@ -88,6 +84,14 @@ public class ClientNode extends AbstractActor {
         System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
+    public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {
+        System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+    }
+
+    public void onSendTimeoutW2Client(SendTimeoutW2Client msg) {
+        System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+    }
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -96,6 +100,8 @@ public class ClientNode extends AbstractActor {
             .match(SendRead2Client.class, this::onSendRead2Client)
             .match(ClientUpdate.class, this::onClientUpdate)
             .match(SendUpdate2Client.class, this::onSendUpdate2Client)
+            .match(SendTimeoutR2Client.class, this::onSendTimeoutR2Client)
+            .match(SendTimeoutW2Client.class, this::onSendTimeoutW2Client)
             .build();
     }
 }

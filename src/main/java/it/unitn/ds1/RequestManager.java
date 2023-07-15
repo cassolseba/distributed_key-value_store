@@ -120,14 +120,24 @@ public class RequestManager {
         return RMresponse.NOTHING;
     }
 
+    public Boolean receiveTimeoutR(String requestId) {
+        Rrequest state = Rrequests.get(requestId);
+        if (state == null)
+            return false;
+        else
+            return true;
+    }
+
     public ActorRef getActorRefR(String requestId) {
         return Rrequests.get(requestId).client;
     }
 
-    public String getValueAndRemoveR(String requestId) {
-        String value = Rrequests.get(requestId).getQuoredValue();
+    public String getValueR(String requestId) {
+        return Rrequests.get(requestId).getQuoredValue();
+    }
+
+    public void removeR(String requestId) {
         Rrequests.remove(requestId);
-        return value;
     }
 
     /////////////////////////////
@@ -150,14 +160,25 @@ public class RequestManager {
         return RMresponse.NOTHING;
     }
 
+    public Boolean receiveTimeoutW(String requestId) {
+        Wrequest state = Wrequests.get(requestId);
+        if (state == null)
+            return false;
+        else
+            return true;
+    }
+
     public ActorRef getActorRefW(String requestId) {
         return Wrequests.get(requestId).client;
     }
 
-    public Integer getVersionAndRemoveW(String requestId) {
+    public Integer getVersionW(String requestId) {
         Integer version = Wrequests.get(requestId).getQuoredVersion();
-        Wrequests.remove(requestId);
         return version;
+    }
+
+    public void removeW(String requestId) {
+        Wrequests.remove(requestId);
     }
 
     public String getUpdateValueW(String requestId) {
