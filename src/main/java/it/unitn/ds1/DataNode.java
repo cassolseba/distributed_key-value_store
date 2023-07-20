@@ -440,6 +440,47 @@ public class DataNode extends AbstractActor {
         nodeData.getKeys().removeIf(item -> !groupM.findDataNodes(item).contains(self()));
     }
 
+    // DEBUG CLASSES AND FUNCTIONS
+    // __________________________________________________________________________
+    /**
+     * Message for requesting a status check of the system. It follows the status request from a client node.
+     */
+    public static class AskStatus {
+        AskStatus() {}
+    }
+
+    /**
+     * Message for printing the actual status. It follows the ask status request.
+     */
+    public static class PrintStatus {
+        PrintStatus() {}
+    }
+
+    /**
+     * Ask status handler.
+     * @param msg is an AskStatus message.
+     */
+    public void onAskStatus(AskStatus msg) {
+        System.out.println("\n---STATUS CHECK STARTING---\n");
+        for (ActorRef node: groupM.getGroupActorRef()) {
+            node.tell(new PrintStatus(), getSelf());
+        }
+    }
+
+    /**
+     * Print status handler: iterate on the data stored in the node and print the content.
+     * @param msg is a PrintStatus message.
+     */
+    public void onPrintStatus(PrintStatus msg) {
+        for (int i: nodeData.getKeys()) {
+            Data tmp = nodeData.get(i);
+            Logs.status(i, tmp.getValue(), tmp.getVersion(), self().path().name());
+        }
+    }
+
+    // __________________________________________________________________________
+    // END DEBUG CLASSES AND FUNCTIONS
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -462,6 +503,8 @@ public class DataNode extends AbstractActor {
             .match(AskItemData.class, this::onAskItemData)
             .match(SendItemData.class, this::onSendItemData)
             .match(AnnounceJoin.class, this::onAnnounceJoin)
+                .match(AskStatus.class, this::onAskStatus) // DEBUG
+                .match(PrintStatus.class, this::onPrintStatus) // DEBUG
             .build();
     }
 }

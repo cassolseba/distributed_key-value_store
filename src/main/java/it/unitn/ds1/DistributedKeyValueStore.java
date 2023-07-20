@@ -74,6 +74,13 @@ public class DistributedKeyValueStore {
 
         inputContinue();
 
+        // DEBUG ____________________________________________________________________________
+        ActorRef clientDebug = clients.get(0);
+        clientDebug.tell(new StatusRequest(group.get(0).getActorRef()), ActorRef.noSender());
+        // END DEBUG ________________________________________________________________________
+
+        inputContinue();
+
         // try read
         ActorRef client = clients.get(0);
         client.tell(new ClientRead(95, group.get(0).getActorRef()), ActorRef.noSender());

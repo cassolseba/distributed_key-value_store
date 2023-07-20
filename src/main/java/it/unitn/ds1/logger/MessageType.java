@@ -14,6 +14,7 @@ public enum MessageType {
     CLIENT_WRITE,
     CLIENT_UPDATE,
     TIMEOUT,
+    STATUS,
     ;
 
     @Override
@@ -57,6 +58,9 @@ public enum MessageType {
             }
             case TIMEOUT -> {
                 return "TIMEOUT";
+            }
+            case STATUS -> {
+                return "STATUS";
             }
             default -> {
                 return "";

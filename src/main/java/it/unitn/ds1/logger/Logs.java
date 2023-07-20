@@ -11,6 +11,8 @@ public class Logs {
     private final static String DATA_FORMAT = "value: %s, version: %s, request id: %s";
     private final static String RESULT_FORMAT = "value: %s, request id: %s";
 
+    private final static String STATUS = "key: %d, value: %s, version: %d";
+
 
     /**
      * Compose the entire log message.
@@ -105,6 +107,19 @@ public class Logs {
                 String.format(FROM_NODE, NodeType.DATA_NODE, node) +
                 String.format(TO_NODE, NodeType.CLIENT, client);
         printLog(MessageType.READ_REPLY, msg);
+    }
+
+    /**
+     * Produce the log for a STATUS CHECK operation
+     * @param key is the key in the stored pair
+     * @param value is the value in the stored pair
+     * @param version is the version of the stored pair
+     * @param node is the data node that is storing the pair
+     */
+    public static void status(int key, String value, int version, String node) {
+        String msg = String.format(STATUS, key, value, version) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, node);
+        printLog(MessageType.STATUS, msg);
     }
     public static void timeout() {}
 

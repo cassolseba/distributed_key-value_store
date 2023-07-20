@@ -107,6 +107,31 @@ public class ClientNode extends AbstractActor {
         System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
     }
 
+    // DEBUG CLASSES AND FUNCTIONS
+    // __________________________________________________________________________
+    /**
+     * Status request message.
+     * Specify a coordinator that will start the status capture operation.
+     */
+    public static class StatusRequest implements Serializable {
+        public final ActorRef coordinator;
+        public StatusRequest(ActorRef coordinator) {
+            this.coordinator = coordinator;
+        }
+    }
+
+    /**
+     * Status request handler.
+     * @param msg is a StatusRequest message
+     */
+    public void onStatusRequest(StatusRequest msg) {
+        AskStatus req = new AskStatus();
+        msg.coordinator.tell(req, self());
+    }
+
+    // __________________________________________________________________________
+    // END DEBUG CLASSES AND FUNCTIONS
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -117,6 +142,7 @@ public class ClientNode extends AbstractActor {
             .match(SendUpdate2Client.class, this::onSendUpdate2Client)
             .match(SendTimeoutR2Client.class, this::onSendTimeoutR2Client)
             .match(SendTimeoutW2Client.class, this::onSendTimeoutW2Client)
+                .match(StatusRequest.class, this::onStatusRequest) // ----- DEBUG -------
             .build();
     }
 }
