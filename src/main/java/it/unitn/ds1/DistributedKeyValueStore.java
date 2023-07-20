@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import it.unitn.ds1.ClientNode.*;
 import it.unitn.ds1.DataNode.InitializeDataGroup;
+import it.unitn.ds1.DataNode.AskNodeGroup;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 
 public class DistributedKeyValueStore {
@@ -72,7 +73,16 @@ public class DistributedKeyValueStore {
         inputContinue();
 
         // try update
-        client.tell(new ClientUpdate(95, "DATA95-UPDATED", group.get(0).getActorRef()), ActorRef.noSender());
+        client.tell(new ClientUpdate(46, "DATA46-UPDATED", group.get(0).getActorRef()), ActorRef.noSender());
+
+        inputContinue();
+
+
+        // try join of one dataNode
+        ActorRef joinNode = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, rand.nextInt(1, maxNodeKey+5)), "joinNode"+1);
+        ActorRef bootstrappingNode = group.get(rand.nextInt(group.size())).getActorRef();
+        bootstrappingNode.tell(new AskNodeGroup(), joinNode);
+
 
         inputContinue();
 

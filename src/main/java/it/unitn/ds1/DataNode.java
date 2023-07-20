@@ -14,6 +14,7 @@ public class DataNode extends AbstractActor {
     private final DataManager nodeData;
     private final GroupManager groupM;
     private final RequestManager rManager;
+    private JoinManager jManager;
 
     public DataNode(int W_quorum, int R_quorum, int N_replica, int maxTimeout, int nodeKey) {
         this.maxTimeout = maxTimeout;
@@ -194,6 +195,59 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    // sended by the joining datanode to the boostrapping node
+    // used by a joining datanode to request the datanode group
+    public static class AskNodeGroup implements Serializable {
+        public AskNodeGroup() {}
+    }
+
+    // sended by the bootstrapping node to the joining datanode
+    // used to reply the ask for the group
+    public static class SendNodeGroup implements Serializable {
+        public final List<DataNodeRef> group;
+        public SendNodeGroup(List<DataNodeRef> group) {
+            this.group = Collections.unmodifiableList(new ArrayList<>(group));
+        }
+    }
+
+    public static class AskDataToJoin implements Serializable {
+        public AskDataToJoin() {}
+    }
+
+    public static class AskItems implements Serializable {
+        public AskItems() {}
+    }
+
+    public static class SendItems implements Serializable {
+        public final Set<Integer> keys;
+        public SendItems(Set<Integer> keys) {
+            this.keys = Collections.unmodifiableSet(new HashSet<>(keys));
+        }
+    }
+
+    public static class AskItemData implements Serializable {
+        public Integer key;
+        public AskItemData(Integer key) {
+            this.key = key;
+        }
+    }
+
+    public static class SendItemData implements Serializable {
+        public Integer key;
+        public Data itemData;
+        public SendItemData(Integer key, Data itemData) {
+            this.key = key;
+            this.itemData = itemData;
+        }
+    }
+
+    public static class AnnounceJoin implements Serializable {
+        Integer nodeKey;
+        public AnnounceJoin(Integer nodeKey) {
+            this.nodeKey = nodeKey;
+        }
+    }
+
     ////////////
     // HANDLERS
     ////////////
@@ -311,6 +365,61 @@ public class DataNode extends AbstractActor {
         System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
+    public void onAskNodeGroup(AskNodeGroup msg) {
+        List<DataNodeRef> group = groupM.getGroup();
+        getSender().tell(new SendNodeGroup(group), self());
+    }
+
+    public void onSendNodeGroup(SendNodeGroup msg) {
+        groupM.add(msg.group);
+        ActorRef neighbor = groupM.getClockwiseNeighbor(nodeKey);
+        neighbor.tell(new AskItems(), self());
+    }
+
+    public void onAskItems(AskItems msg) {
+        Set<Integer> items = nodeData.getKeys();
+        getSender().tell(new SendItems(items), self());
+    }
+
+    public void onSendItems(SendItems msg) {
+        this.jManager = new JoinManager(groupM.N_replica, msg.keys);
+        for (Integer dataKey : msg.keys) {
+            for (ActorRef node : groupM.findDataNodes(dataKey)) {
+                AskItemData request = new AskItemData(dataKey);
+                node.tell(request, self());
+            }
+        }
+    }
+
+    public void onAskItemData(AskItemData msg) {
+        Data itemData = nodeData.get(msg.key);
+        getSender().tell(new SendItemData(msg.key, itemData), self());
+    }
+
+    public void onSendItemData(SendItemData msg) {
+        if (jManager.add(msg.key, msg.itemData)) {
+            HashMap<Integer, Data> items = jManager.getData();
+            jManager = null;
+            for (Map.Entry<Integer, Data> entry : items.entrySet()) {
+                Integer key = entry.getKey();
+                Data itemData = entry.getValue();
+                nodeData.putData(key, itemData);
+            }
+            for (ActorRef dataNode : groupM.getGroupActorRef()) {
+                dataNode.tell(new AnnounceJoin(nodeKey), self());
+            }
+            groupM.add(new DataNodeRef(nodeKey, self()));  // add itself to his group
+        }
+    }
+
+    public void onAnnounceJoin(AnnounceJoin msg) {
+        groupM.add(new DataNodeRef(msg.nodeKey, getSender()));
+
+        // check if the node need to drop items
+        // can be optimized
+        nodeData.getKeys().removeIf(item -> !groupM.findDataNodes(item).contains(self()));
+    }
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -326,6 +435,13 @@ public class DataNode extends AbstractActor {
             .match(SendVersion.class, this::onSendVersion)
             .match(TimeoutW.class, this::onTimeoutW)
             .match(UpdateData.class, this::onUpdateData)
+            .match(AskNodeGroup.class, this::onAskNodeGroup)
+            .match(SendNodeGroup.class, this::onSendNodeGroup)
+            .match(AskItems.class, this::onAskItems)
+            .match(SendItems.class, this::onSendItems)
+            .match(AskItemData.class, this::onAskItemData)
+            .match(SendItemData.class, this::onSendItemData)
+            .match(AnnounceJoin.class, this::onAnnounceJoin)
             .build();
     }
 }

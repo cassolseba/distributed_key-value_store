@@ -3,11 +3,12 @@ import java.util.*;
 import akka.japi.Pair;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
+import java.util.stream.Collectors;
 
 public class GroupManager {
     private final List<DataNodeRef> group; // must be always sorted
     private int size;
-    private final int N_replica;
+    public final int N_replica;
 
     public GroupManager(int N_replica) {
         this.group = new ArrayList<>();
@@ -35,6 +36,7 @@ public class GroupManager {
     public void add(DataNodeRef node) {
         int i = getIdx(node.getNodeKey());
         group.add(i, node);
+        this.size = group.size();
     }
 
     public List<ActorRef> findDataNodes(Integer dataKey) {
@@ -45,6 +47,18 @@ public class GroupManager {
             i = (i+1) % size;
         }
         return dataNodes;
+    }
+
+    public List<DataNodeRef> getGroup() {
+        return group;
+    }
+
+    public List<ActorRef> getGroupActorRef() {
+        return group.stream().map( elem -> elem.getActorRef() ).collect(Collectors.toList());
+    }
+
+    public ActorRef getClockwiseNeighbor(Integer dataKey) {
+        return this.group.get(getIdx(dataKey + 1)).getActorRef();
     }
 
     private int getIdx(Integer dataKey) {
