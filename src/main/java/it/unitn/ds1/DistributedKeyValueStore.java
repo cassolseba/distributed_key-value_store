@@ -1,3 +1,11 @@
+/**
+ * DISTRIBUTED KEY-VALUE STORE
+ * Distributed Systems 1
+ * University of Trento
+ * @author Samuele Angheben
+ * @author Sebastiano Cassol
+ */
+
 package it.unitn.ds1;
 
 import akka.actor.ActorRef;
@@ -22,9 +30,9 @@ public class DistributedKeyValueStore {
         final int R_quorum = 2;
         final int maxTimeout = 1000;
 
-        final ActorSystem system = ActorSystem.create("DKVSsystem");
+        final ActorSystem system = ActorSystem.create("DKVSystem");
 
-        // create datanodes group
+        // create data nodes group
         List<DataNodeRef> group = new ArrayList<>();
         Random rand = new Random(1337);
         int nodeKey = 1;
@@ -37,7 +45,7 @@ public class DistributedKeyValueStore {
             nodeKey += rand.nextInt(8, 15);
         }
 
-        // send initilization to datanodes
+        // send initialization to data nodes
         InitializeDataGroup initMsg = new InitializeDataGroup(group);
         for (DataNodeRef elem: group) {
            elem.getActorRef().tell(initMsg, ActorRef.noSender());
@@ -51,16 +59,16 @@ public class DistributedKeyValueStore {
             clients.add(system.actorOf(ClientNode.props(), "clientNode"+i));
         }
 
-        // write data into datanodes by clients
+        // write data into data nodes by clients
         for (int i=0; i<N_dataElem; i++) {
             // create random data
             Integer dataKey = rand.nextInt(1, maxNodeKey+5);
-            // select random datanodes (coordinator)
+            // select random data nodes (coordinator)
             ActorRef coordinator = group.get(rand.nextInt(group.size())).getActorRef();
             // select random client
             ActorRef client = clients.get(rand.nextInt(clients.size()));
 
-            ClientWrite msg = new ClientWrite(dataKey, "DATA"+dataKey.toString(), coordinator);
+            ClientWrite msg = new ClientWrite(dataKey, "DATA"+dataKey, coordinator);
             client.tell(msg, ActorRef.noSender());
         }
 

@@ -3,12 +3,15 @@ import java.io.Serializable;
 
 import akka.actor.*;
 import it.unitn.ds1.DataNode.*;
+import it.unitn.ds1.logger.Logs;
 
 public class ClientNode extends AbstractActor {
     // used to identify a message
     private Integer Id = 0;
 
-    public ClientNode() {}
+    public ClientNode() {
+        System.out.println("CLIENT: is " + self().path().name());
+    }
 
     static public Props props() {
         return Props.create(ClientNode.class, () -> new ClientNode());
@@ -18,7 +21,7 @@ public class ClientNode extends AbstractActor {
     // MESSAGES
     ///////////
 
-    // tell the client to start the write procedure
+    // tell the client to start write procedure
     public static class ClientWrite implements Serializable {
         public final Integer key;
         public final String value;
@@ -39,7 +42,7 @@ public class ClientNode extends AbstractActor {
         }
     }
 
-    // tell the cilent to start the update procedure
+    // tell the client to start the update procedure
     public static class ClientUpdate implements Serializable {
         public final Integer key;
         public final String value;
@@ -58,26 +61,38 @@ public class ClientNode extends AbstractActor {
     public void onClientWrite(ClientWrite msg) {
         AskWriteData data = new AskWriteData(msg.key, msg.value);
         msg.coordinator.tell(data, self());
+
+        // logging
+        Logs.client_write(msg.key, msg.value, self().path().name(), msg.coordinator.path().name());
     }
 
     public void onClientRead(ClientRead msg) {
         String requestId = self().path() + this.Id.toString();
         AskReadData data = new AskReadData(msg.key, requestId);
-        System.out.println("Client " + self().path() + ", create read request[" +
-                requestId + "]" + " for key:" + msg.key);
+        // System.out.println("Client " + self().path() + ",
+        // create read request["requestId + "]" + " for key:" + msg.key);
         msg.coordinator.tell(data, self());
+
+        // logging
+        Logs.client_read(msg.key, self().path().name(), msg.coordinator.path().name());
     }
 
     public void onSendRead2Client(SendRead2Client msg) {
-        System.out.println("Client " + self().path() + " received value: " + msg.value);
+        // System.out.println("Client " + self().path() + " received value: " + msg.value);
+
+        // logging
+        Logs.read_reply_on_client(msg.value, msg.requestId, getSender().path().name(), self().path().name());
     }
 
     public void onClientUpdate(ClientUpdate msg) {
         String requestId = self().path() + this.Id.toString();
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
-        System.out.println("Client " + self().path() + ", create update request[" +
-                requestId + "]" + " for key:" + msg.key + " with value:" + msg.value);
+        //System.out.println("Client " + self().path() + ", create update request["
+        // + requestId + "]" + " for key:" + msg.key + " with value:" + msg.value);
         msg.coordinator.tell(data, self());
+
+        // logging
+        Logs.client_update(msg.key, msg.value, self().path().name(), msg.coordinator.path().name());
     }
 
     public void onSendUpdate2Client(SendUpdate2Client msg) {
