@@ -7,7 +7,7 @@ import it.unitn.ds1.logger.Logs;
 
 public class ClientNode extends AbstractActor {
     // used to identify a message
-    private Integer Id = 0;
+    private final Integer Id = 0;
 
     public ClientNode() {
         System.out.println("CLIENT: is " + self().path().name());
@@ -96,7 +96,9 @@ public class ClientNode extends AbstractActor {
     }
 
     public void onSendUpdate2Client(SendUpdate2Client msg) {
-        System.out.println("Client " + self().path() + " received version: " + msg.version);
+        // logging
+        Logs.update_reply_on_client(msg.version, msg.requestId, getSender().path().name(), self().path().name());
+        //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
     public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {

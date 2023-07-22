@@ -18,6 +18,7 @@ import it.unitn.ds1.ClientNode.*;
 import it.unitn.ds1.DataNode.InitializeDataGroup;
 import it.unitn.ds1.DataNode.AskNodeGroup;
 import it.unitn.ds1.GroupManager.DataNodeRef;
+import it.unitn.ds1.logger.Logs;
 
 public class DistributedKeyValueStore {
     public static void main(String[] args) {
@@ -29,6 +30,8 @@ public class DistributedKeyValueStore {
         final int W_quorum = 2;
         final int R_quorum = 2;
         final int maxTimeout = 1000;
+
+        Logs.printHeader();
 
         final ActorSystem system = ActorSystem.create("DKVSystem");
 
@@ -92,6 +95,11 @@ public class DistributedKeyValueStore {
 
         inputContinue();
 
+        // DEBUG ____________________________________________________________________________
+        clientDebug.tell(new StatusRequest(group.get(0).getActorRef()), ActorRef.noSender());
+        // END DEBUG ________________________________________________________________________
+
+        inputContinue();
 
         // try join of one dataNode
         ActorRef joinNode = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, rand.nextInt(1, maxNodeKey+5)), "joinNode"+1);

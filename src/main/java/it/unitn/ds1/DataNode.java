@@ -24,7 +24,8 @@ public class DataNode extends AbstractActor {
         this.nodeData = new DataManager();
         this.groupM = new GroupManager(N_replica);
 
-        System.out.println("INIT_NODE - Name: " + self().path().name() + ", key: " + nodeKey);
+        // Logging
+        System.out.println("INIT_NODE | Name: " + self().path().name() + ", key: " + nodeKey + " |");
     }
 
     static public Props props(int W_quorum, int R_quorum, int N_replica, int maxTimeout, int nodeKey) {
@@ -253,6 +254,11 @@ public class DataNode extends AbstractActor {
     // HANDLERS
     ////////////
 
+    /**
+     * Handler that set the actual group of nodes in this node.
+     * @param msg InitializeDataGroup msg
+     * @see InitializeDataGroup
+     */
     public void onInitializeDataGroup(InitializeDataGroup msg) {
         groupM.add(msg.group);
 
@@ -260,6 +266,13 @@ public class DataNode extends AbstractActor {
         Logs.init_group(self().path().name());
     }
 
+    /**
+     * Handler that, on receiving an AskWriteData message,
+     * sends a WriteData message to the nodes that have the specified key.
+     * @param msg AskWriteData message
+     * @see AskWriteData
+     * @see WriteData
+     */
     public void onAskWriteData(AskWriteData msg) {
         for (ActorRef node : groupM.findDataNodes(msg.key)) {
             WriteData data = new WriteData(msg.key, msg.value);
@@ -270,15 +283,29 @@ public class DataNode extends AbstractActor {
         Logs.ask_write(msg.key, msg.value, getSender().path().name(), self().path().name());
     }
 
+    /**
+     * Handler that, on receiving a WriteData message,
+     * writes the pair {key, value} in this nodeData
+     * @param msg WriteData message
+     * @see WriteData
+     * @see Data
+     */
     public void onWriteData(WriteData msg) {
         nodeData.put(msg.key, msg.value);
         DataManager.Data elem = nodeData.get(msg.key);
         //System.out.println("DataNode " + self().path().name() + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
 
         // logging
-        Logs.write(msg.key, msg.value, getSender().path().name(), self().path().name());
+        Logs.write(msg.key, elem.getValue(), getSender().path().name(), self().path().name());
     }
 
+    /**
+     * Handler that, on receiving an AskReadData message,
+     * sends a ReadData message to the nodes that have the specified key.
+     * @param msg AskReadData message
+     * @see AskReadData
+     * @see ReadData
+     */
     public void onAskReadData(AskReadData msg) {
         rManager.createR(msg.requestId, getSender());
         for (ActorRef node : groupM.findDataNodes(msg.key)) {
@@ -298,6 +325,13 @@ public class DataNode extends AbstractActor {
 
     }
 
+    /**
+     * Handler that, on receiving a ReadData message,
+     * gets the value from this nodeData associated with the provided key.
+     * @param msg WriteData message
+     * @see ReadData
+     * @see Data
+     */
     public void onReadData(ReadData msg) {
         Data readedData = nodeData.get(msg.key);
         getSender().tell(new SendRead(readedData, msg.requestId), self());
@@ -337,11 +371,17 @@ public class DataNode extends AbstractActor {
             AskVersion request = new AskVersion(msg.key, msg.requestId);
             node.tell(request, self());
         }
+
+        // logging
+        Logs.ask_update(msg.key, msg.value, msg.requestId, getSender().path().name(), self().path().name());
     }
 
     public void onAskVersion(AskVersion msg) {
         Data readedData = nodeData.get(msg.key);
         getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
+
+        // logging
+        Logs.ask_version(msg.key, msg.requestId, getSender().path().name(), self().path().name());
     }
 
     public void onSendVersion(SendVersion msg) {
@@ -365,6 +405,9 @@ public class DataNode extends AbstractActor {
                     UpdateData data = new UpdateData(key, value, version);
                     node.tell(data, self());
                 }
+
+                // logging
+                Logs.version_reply(msg.version, msg.requestId, getSender().path().name(), self().path().name());
             }
 
             default -> {}
@@ -382,7 +425,10 @@ public class DataNode extends AbstractActor {
     public void onUpdateData(UpdateData msg) {
         nodeData.putUpdate(msg.key, msg.value, msg.version);
         DataManager.Data elem = nodeData.get(msg.key);
-        System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+
+        // logging
+        Logs.update(msg.key, elem.getValue(), getSender().path().name(), self().path().name());
+        // System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
     public void onAskNodeGroup(AskNodeGroup msg) {
