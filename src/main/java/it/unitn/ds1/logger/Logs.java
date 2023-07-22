@@ -11,7 +11,7 @@ public class Logs {
     private final static String UPDATE_FORMAT = "key: %d, new value: %s, request id: %s";
     private final static String DATA_FORMAT = "value: %s, version: %s, request id: %s";
     private final static String RESULT_FORMAT = "value: %s, request id: %s";
-    private final static String VERSION_FORMAT= "version: %d, request id: %s";
+    private final static String VERSION_FORMAT = "version: %d, request id: %s";
 
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
@@ -147,6 +147,18 @@ public class Logs {
                 String.format(FROM_NODE, NodeType.DATA_NODE, node) +
                 String.format(FROM_NODE, NodeType.COORDINATOR, coordinator);
         printLog(MessageType.VERSION_REPLY, msg);
+    }
+
+    public static void ask_group(String joining, String node) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, joining) +
+                String.format(TO_NODE, NodeType.DATA_NODE, node);
+        printLog(MessageType.ASK_GROUP, msg);
+    }
+
+    public static void group_reply(String node, String joining) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, node) +
+                String.format(TO_NODE, NodeType.DATA_NODE, joining);
+        printLog(MessageType.GROUP_REPLY, msg);
     }
 
     /**

@@ -5,6 +5,11 @@ import akka.actor.*;
 import it.unitn.ds1.DataNode.*;
 import it.unitn.ds1.logger.Logs;
 
+/**
+ * ClientNode
+ * A class that extends AbstractActor.
+ * Defines the client node behavior.
+ */
 public class ClientNode extends AbstractActor {
     // used to identify a message
     private final Integer Id = 0;

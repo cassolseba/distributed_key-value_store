@@ -434,12 +434,18 @@ public class DataNode extends AbstractActor {
     public void onAskNodeGroup(AskNodeGroup msg) {
         List<DataNodeRef> group = groupM.getGroup();
         getSender().tell(new SendNodeGroup(group), self());
+
+        // logging
+        Logs.ask_group(getSender().path().name(), self().path().name());
     }
 
     public void onSendNodeGroup(SendNodeGroup msg) {
         groupM.add(msg.group);
         ActorRef neighbor = groupM.getClockwiseNeighbor(nodeKey);
         neighbor.tell(new AskItems(), self());
+
+        // logging
+        Logs.group_reply(getSender().path().name(), self().path().name());
     }
 
     public void onAskItems(AskItems msg) {

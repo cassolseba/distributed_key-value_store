@@ -6,6 +6,7 @@ public enum MessageType {
     ASK_WRITE,
     ASK_UPDATE,
     ASK_VERSION,
+    ASK_GROUP,
     READ,
     WRITE,
     UPDATE,
@@ -13,6 +14,7 @@ public enum MessageType {
     WRITE_REPLY,
     UPDATE_REPLY,
     VERSION_REPLY,
+    GROUP_REPLY,
     CLIENT_READ,
     CLIENT_WRITE,
     CLIENT_UPDATE,
@@ -38,6 +40,9 @@ public enum MessageType {
             case ASK_VERSION -> {
                 return "ASK_VERSION";
             }
+            case ASK_GROUP -> {
+                return "ASK_GROUP";
+            }
             case READ -> {
                 return "READ";
             }
@@ -58,6 +63,9 @@ public enum MessageType {
             }
             case VERSION_REPLY -> {
                 return "VERSION_REPLY";
+            }
+            case GROUP_REPLY -> {
+                return "GROUP_REPLY";
             }
             case CLIENT_READ -> {
                 return "CLIENT_READ";

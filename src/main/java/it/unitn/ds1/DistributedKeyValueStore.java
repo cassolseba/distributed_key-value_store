@@ -20,6 +20,10 @@ import it.unitn.ds1.DataNode.AskNodeGroup;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 import it.unitn.ds1.logger.Logs;
 
+/**
+ * DistributedKeyValueStore
+ * The "main" class.
+ */
 public class DistributedKeyValueStore {
     public static void main(String[] args) {
         final int N_dataNode = 10;
