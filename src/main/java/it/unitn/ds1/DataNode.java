@@ -201,6 +201,13 @@ public class DataNode extends AbstractActor {
         public AskNodeGroup() {}
     }
 
+    public static class AskToJoin implements Serializable {
+        public ActorRef bootstrappingNode;
+        public AskToJoin(ActorRef node) {
+            this.bootstrappingNode = node;
+        }
+    }
+
     // sended by the bootstrapping node to the joining datanode
     // used to reply the ask for the group
     public static class SendNodeGroup implements Serializable {
@@ -245,6 +252,23 @@ public class DataNode extends AbstractActor {
         Integer nodeKey;
         public AnnounceJoin(Integer nodeKey) {
             this.nodeKey = nodeKey;
+        }
+    }
+
+    public static class AskToLeave implements Serializable {
+        public AskToLeave() {}
+    }
+
+    public static class AnnounceLeave implements Serializable {
+        public AnnounceLeave() {}
+    }
+
+    public static class NewData implements Serializable {
+        Integer key;
+        Data data;
+        public NewData(Integer key, Data data) {
+            this.key = key;
+            this.data = data;
         }
     }
 
@@ -365,6 +389,10 @@ public class DataNode extends AbstractActor {
         System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
+    public void onAskToJoin(AskToJoin msg) {
+        msg.bootstrappingNode.tell(new AskNodeGroup(), self());
+    }
+
     public void onAskNodeGroup(AskNodeGroup msg) {
         List<DataNodeRef> group = groupM.getGroup();
         getSender().tell(new SendNodeGroup(group), self());
@@ -420,6 +448,30 @@ public class DataNode extends AbstractActor {
         nodeData.getKeys().removeIf(item -> !groupM.findDataNodes(item).contains(self()));
     }
 
+    public void onAskToLeave(AskToLeave msg) {
+        // announce to others
+        for (ActorRef node : groupM.getGroupActorRef()) {
+            node.tell(new AnnounceLeave(), self());
+        }
+
+        // send data to the node that will become responsible of
+        groupM.remove(self());
+        nodeData.getAllData().forEach( (k, v) -> {
+                for (ActorRef node : groupM.findDataNodes(k)) {
+                    node.tell(new NewData(k, v), self());
+                }
+        });
+    }
+
+    public void onAnnounceLeave(AnnounceLeave msg) {
+        // remove the sender
+        groupM.remove(getSender());
+    }
+
+    public void onNewData(NewData msg) {
+        nodeData.putNewData(msg.key, msg.data);
+    }
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
@@ -435,6 +487,7 @@ public class DataNode extends AbstractActor {
             .match(SendVersion.class, this::onSendVersion)
             .match(TimeoutW.class, this::onTimeoutW)
             .match(UpdateData.class, this::onUpdateData)
+            .match(AskToJoin.class, this::onAskToJoin)
             .match(AskNodeGroup.class, this::onAskNodeGroup)
             .match(SendNodeGroup.class, this::onSendNodeGroup)
             .match(AskItems.class, this::onAskItems)
@@ -442,6 +495,9 @@ public class DataNode extends AbstractActor {
             .match(AskItemData.class, this::onAskItemData)
             .match(SendItemData.class, this::onSendItemData)
             .match(AnnounceJoin.class, this::onAnnounceJoin)
+            .match(AskToLeave.class, this::onAskToLeave)
+            .match(AnnounceLeave.class, this::onAnnounceLeave)
+            .match(NewData.class, this::onNewData)
             .build();
     }
 }

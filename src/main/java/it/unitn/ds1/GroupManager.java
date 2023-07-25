@@ -7,12 +7,10 @@ import java.util.stream.Collectors;
 
 public class GroupManager {
     private final List<DataNodeRef> group; // must be always sorted
-    private int size;
     public final int N_replica;
 
     public GroupManager(int N_replica) {
         this.group = new ArrayList<>();
-        this.size = 0;
         this.N_replica = N_replica;
     }
 
@@ -30,13 +28,11 @@ public class GroupManager {
     public void add(List<DataNodeRef> nodes) {
         this.group.addAll(nodes);
         Collections.sort(this.group, Comparator.comparing(p -> p.getNodeKey()));
-        this.size = group.size();
     }
 
     public void add(DataNodeRef node) {
         int i = getIdx(node.getNodeKey());
         group.add(i, node);
-        this.size = group.size();
     }
 
     public List<ActorRef> findDataNodes(Integer dataKey) {
@@ -44,9 +40,13 @@ public class GroupManager {
         int i = getIdx(dataKey);
         for (int j=0; j<N_replica; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
-            i = (i+1) % size;
+            i = (i+1) % group.size();
         }
         return dataNodes;
+    }
+
+    public void remove(ActorRef nodeRef) {
+        group.removeIf(dataNode -> dataNode.getActorRef() == nodeRef);
     }
 
     public List<DataNodeRef> getGroup() {
