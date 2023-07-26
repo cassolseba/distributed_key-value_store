@@ -1,3 +1,11 @@
+/**
+ * DISTRIBUTED KEY-VALUE STORE
+ * Distributed Systems 1
+ * University of Trento
+ * @author Samuele Angheben
+ * @author Sebastiano Cassol
+ */
+
 package it.unitn.ds1;
 
 import akka.actor.ActorRef;
@@ -12,7 +20,12 @@ import it.unitn.ds1.DataNode.AskNodeGroup;
 import it.unitn.ds1.DataNode.AskToJoin;
 import it.unitn.ds1.DataNode.AskToLeave;
 import it.unitn.ds1.GroupManager.DataNodeRef;
+import it.unitn.ds1.logger.Logs;
 
+/**
+ * DistributedKeyValueStore
+ * The "main" class.
+ */
 public class DistributedKeyValueStore {
     public static void main(String[] args) {
         final int N_dataNode = 10;
@@ -24,9 +37,11 @@ public class DistributedKeyValueStore {
         final int R_quorum = 2;
         final int maxTimeout = 1000;
 
-        final ActorSystem system = ActorSystem.create("DKVSsystem");
+        Logs.printHeader();
 
-        // create datanodes group
+        final ActorSystem system = ActorSystem.create("DKVSystem");
+
+        // create data nodes group
         List<DataNodeRef> group = new ArrayList<>();
         Random rand = new Random(1337);
         int nodeKey = 1;
@@ -39,7 +54,7 @@ public class DistributedKeyValueStore {
             nodeKey += rand.nextInt(8, 15);
         }
 
-        // send initilization to datanodes
+        // send initialization to data nodes
         InitializeDataGroup initMsg = new InitializeDataGroup(group);
         for (DataNodeRef elem: group) {
            elem.getActorRef().tell(initMsg, ActorRef.noSender());
@@ -53,18 +68,25 @@ public class DistributedKeyValueStore {
             clients.add(system.actorOf(ClientNode.props(), "clientNode"+i));
         }
 
-        // write data into datanodes by clients
+        // write data into data nodes by clients
         for (int i=0; i<N_dataElem; i++) {
             // create random data
             Integer dataKey = rand.nextInt(1, maxNodeKey+5);
-            // select random datanodes (coordinator)
+            // select random data nodes (coordinator)
             ActorRef coordinator = group.get(rand.nextInt(group.size())).getActorRef();
             // select random client
             ActorRef client = clients.get(rand.nextInt(clients.size()));
 
-            ClientWrite msg = new ClientWrite(dataKey, "DATA"+dataKey.toString(), coordinator);
+            ClientWrite msg = new ClientWrite(dataKey, "DATA"+dataKey, coordinator);
             client.tell(msg, ActorRef.noSender());
         }
+
+        inputContinue();
+
+        // DEBUG ____________________________________________________________________________
+        ActorRef clientDebug = clients.get(0);
+        clientDebug.tell(new StatusRequest(group.get(0).getActorRef()), ActorRef.noSender());
+        // END DEBUG ________________________________________________________________________
 
         inputContinue();
 
@@ -79,6 +101,11 @@ public class DistributedKeyValueStore {
 
         inputContinue();
 
+        // DEBUG ____________________________________________________________________________
+        clientDebug.tell(new StatusRequest(group.get(0).getActorRef()), ActorRef.noSender());
+        // END DEBUG ________________________________________________________________________
+
+        inputContinue();
 
         // try join of one dataNode
         ActorRef joinNode = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, rand.nextInt(1, maxNodeKey+5)), "joinNode"+1);

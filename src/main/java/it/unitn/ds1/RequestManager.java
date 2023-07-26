@@ -4,11 +4,13 @@ import java.util.HashMap;
 import akka.actor.*;
 import it.unitn.ds1.DataManager.Data;
 
-// class used to manage the client requests by the coordinators
-// instanciated by every datanode
-// store the information to know who to respond to and
-// manage the datanode response and quorums of each ongoing client request (read, update)
-
+/**
+ * RequestManager
+ * A class used to manage client requests received by the coordinators.
+ * Instantiated by every data node.
+ * Stores information about the senders of the request
+ * Manages datanode responses and quorums of each ongoing client request as read, update.
+ */
 public class RequestManager {
     private final int W_quorum;
     private final int R_quorum;
@@ -65,8 +67,8 @@ public class RequestManager {
         //                    version, counter
         private final HashMap<Integer, Integer> counterMap;
         private Integer quoredVersion;
-        private String updateValue;
-        private Integer updateKey;
+        private final String updateValue;
+        private final Integer updateKey;
 
         public Wrequest(ActorRef client, Integer updateKey, String updateValue) {
             quorumVal = W_quorum;
@@ -104,12 +106,21 @@ public class RequestManager {
     // methods for read requests
     ////////////////////////////
 
-    // initialize a new read quorum
+    /**
+     * Initialize a new read quorum
+     * @param requestId Identifier of the request
+     * @param client Reference to client node
+     */
     public void createR(String requestId, ActorRef client) {
         Rrequests.put(requestId, new Rrequest(client));
     }
 
-    // used to add a read message
+    /**
+     * Used to add a read message
+     * @param requestId Identifier if the request
+     * @param data
+     * @return the decision {OK, NOTHING}
+     */
     public RMresponse addR(String requestId, Data data) {
         Rrequest state = Rrequests.get(requestId);
         if (state == null)
@@ -122,10 +133,7 @@ public class RequestManager {
 
     public Boolean receiveTimeoutR(String requestId) {
         Rrequest state = Rrequests.get(requestId);
-        if (state == null)
-            return false;
-        else
-            return true;
+        return state != null;
     }
 
     public ActorRef getActorRefR(String requestId) {
@@ -145,11 +153,26 @@ public class RequestManager {
     /////////////////////////////
 
     // initialize a new update quorum
+
+    /**
+     * Initialize a new update quorum
+     * @param requestId Identifier of the request
+     * @param client Reference to client node
+     * @param updateKey Key that identify data to update
+     * @param updateValue New value to store for the specified key
+     */
     public void createW(String requestId, ActorRef client, Integer updateKey, String updateValue) {
         Wrequests.put(requestId, new Wrequest(client, updateKey, updateValue));
     }
 
     // used in add a update message
+
+    /**
+     * Used to add an update message
+     * @param requestId Identifier of the request
+     * @param version
+     * @return the decision {OK, NOTHING}
+     */
     public RMresponse addW(String requestId, Integer version) {
         Wrequest state = Wrequests.get(requestId);
         if (state == null)
@@ -162,10 +185,7 @@ public class RequestManager {
 
     public Boolean receiveTimeoutW(String requestId) {
         Wrequest state = Wrequests.get(requestId);
-        if (state == null)
-            return false;
-        else
-            return true;
+        return state != null;
     }
 
     public ActorRef getActorRefW(String requestId) {
@@ -173,8 +193,7 @@ public class RequestManager {
     }
 
     public Integer getVersionW(String requestId) {
-        Integer version = Wrequests.get(requestId).getQuoredVersion();
-        return version;
+        return Wrequests.get(requestId).getQuoredVersion();
     }
 
     public void removeW(String requestId) {
@@ -182,12 +201,10 @@ public class RequestManager {
     }
 
     public String getUpdateValueW(String requestId) {
-        String update = Wrequests.get(requestId).getUpdateValue();
-        return update;
+        return Wrequests.get(requestId).getUpdateValue();
     }
 
     public Integer getUpdateKeyW(String requestId) {
-        Integer update = Wrequests.get(requestId).getUpdateKey();
-        return update;
+        return Wrequests.get(requestId).getUpdateKey();
     }
 }
