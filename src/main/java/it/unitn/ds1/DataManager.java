@@ -49,6 +49,14 @@ public class DataManager {
         storage.put(key, itemData);
     }
 
+
+    public void putNewData(Integer key, Data itemData) {
+        Data oldData = storage.get(key);
+        if (oldData == null) {
+            storage.put(key, itemData);
+        }
+    }
+
     public void putUpdate(Integer key, String value, Integer version) {
         storage.put(key, new Data(value, version));
     }
@@ -68,5 +76,9 @@ public class DataManager {
     public void remove(Integer key) {
         System.out.println("[]" + getValue(key));
         storage.remove(key);
+    }
+
+    public Map<Integer, Data> getAllData() {
+        return storage;
     }
 }
