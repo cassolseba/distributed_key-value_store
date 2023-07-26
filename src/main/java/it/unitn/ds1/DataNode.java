@@ -4,6 +4,7 @@ import it.unitn.ds1.GroupManager.DataNodeRef;
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 import it.unitn.ds1.DataManager.Data;
+import java.util.stream.Collectors;
 
 import java.io.Serializable;
 import java.util.*;
@@ -30,6 +31,20 @@ public class DataNode extends AbstractActor {
         return Props.create(DataNode.class, () -> new DataNode(W_quorum, R_quorum, N_replica, maxTimeout, nodeKey));
     }
 
+    private void crash() {
+        System.out.println("DataNode " + self().path().name() + " crashed");
+        getContext().become(crashed());
+    }
+
+    private void recover() {
+        System.out.println("DataNode " + self().path().name() + " recovered");
+        getContext().become(createReceive());
+    }
+
+    // can be optimized
+    private void dropUselessItems() {
+        nodeData.getKeys().removeIf(item -> !groupM.findDataNodes(item).contains(self()));
+    }
 
     ////////////
     // MESSAGES
@@ -249,7 +264,7 @@ public class DataNode extends AbstractActor {
     }
 
     public static class AnnounceJoin implements Serializable {
-        Integer nodeKey;
+        public Integer nodeKey;
         public AnnounceJoin(Integer nodeKey) {
             this.nodeKey = nodeKey;
         }
@@ -264,12 +279,53 @@ public class DataNode extends AbstractActor {
     }
 
     public static class NewData implements Serializable {
-        Integer key;
-        Data data;
+        public Integer key;
+        public Data data;
         public NewData(Integer key, Data data) {
             this.key = key;
             this.data = data;
         }
+    }
+
+    public static class AskCrash implements Serializable {
+        public AskCrash() {}
+    }
+
+    public static class AskRecover implements Serializable {
+        public ActorRef node;
+        public AskRecover(ActorRef node) {
+            this.node = node;
+        }
+    }
+
+    public static class AskGroupToRecover implements Serializable {
+        public AskGroupToRecover() {};
+    }
+
+
+    public static class SendGroupToRecover implements Serializable {
+        public final List<DataNodeRef> group;
+        public SendGroupToRecover(List<DataNodeRef> group) {
+            this.group = Collections.unmodifiableList(new ArrayList<>(group));
+        }
+    }
+
+    public static class AskDataToRecover implements Serializable {
+        public Integer crashedNodeId;
+        public AskDataToRecover(Integer nodeId) {
+            this.crashedNodeId = nodeId;
+        }
+    }
+
+    public static class SendDataToRecover implements Serializable {
+        public Map<Integer, Data> data;
+        public SendDataToRecover(Map<Integer, Data> data) {
+            this.data = Collections.unmodifiableMap(new HashMap<>(data));
+        }
+    }
+
+    public static class TimeoutRecover implements Serializable {
+        public TimeoutRecover() {}
     }
 
     ////////////
@@ -444,11 +500,11 @@ public class DataNode extends AbstractActor {
         groupM.add(new DataNodeRef(msg.nodeKey, getSender()));
 
         // check if the node need to drop items
-        // can be optimized
-        nodeData.getKeys().removeIf(item -> !groupM.findDataNodes(item).contains(self()));
+        dropUselessItems();
     }
 
     public void onAskToLeave(AskToLeave msg) {
+        System.out.println("DataNode " + self().path().name() + " leaved");
         // announce to others
         for (ActorRef node : groupM.getGroupActorRef()) {
             node.tell(new AnnounceLeave(), self());
@@ -470,6 +526,52 @@ public class DataNode extends AbstractActor {
 
     public void onNewData(NewData msg) {
         nodeData.putNewData(msg.key, msg.data);
+    }
+
+    public void onAskCrash(AskCrash msg) {
+        crash();
+    }
+
+    public void onAskRecover(AskRecover msg) {
+        msg.node.tell(new AskGroupToRecover(), self());
+    }
+
+    public void onAskGroupToRecover(AskGroupToRecover msg) {
+        List<DataNodeRef> group = groupM.getGroup();
+        getSender().tell(new SendGroupToRecover(group), self());
+    }
+
+    public void onSendGroupToRecover(SendGroupToRecover msg) {
+        groupM.addNewGroup(msg.group);
+        dropUselessItems();
+
+//        System.out.print("Client " + self().path().name());
+        for (ActorRef node : groupM.find2KNeighbors(nodeKey)) {
+//            System.out.print("Client " + node.path().name());
+            node.tell(new AskDataToRecover(nodeKey), self());
+        }
+        getContext().system().scheduler().scheduleOnce(
+            Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
+            getSelf(),
+            new TimeoutRecover(),
+            getContext().system().dispatcher(), getSelf()
+        );
+    }
+
+    public void onAskDataToRecover(AskDataToRecover msg) {
+        ActorRef crashedNode = getSender();
+        Map<Integer, Data> dataToSend = nodeData.getAllData().entrySet().stream()
+                .filter(item -> groupM.findDataNodes(item.getKey()).contains(crashedNode))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        crashedNode.tell(new SendDataToRecover(dataToSend), self());
+    }
+
+    public void onTimeoutRecover(TimeoutRecover msg) {
+        recover();
+    }
+
+    public void onSendDataToRecover(SendDataToRecover msg) {
+        nodeData.add(msg.data);
     }
 
     @Override
@@ -498,6 +600,19 @@ public class DataNode extends AbstractActor {
             .match(AskToLeave.class, this::onAskToLeave)
             .match(AnnounceLeave.class, this::onAnnounceLeave)
             .match(NewData.class, this::onNewData)
+            .match(AskCrash.class, this::onAskCrash)
+            .match(AskGroupToRecover.class, this::onAskGroupToRecover)
+            .match(AskDataToRecover.class, this::onAskDataToRecover)
+            .build();
+    }
+
+    final AbstractActor.Receive crashed() {
+        return receiveBuilder()
+            .match(AskRecover.class, this::onAskRecover)
+            .match(SendGroupToRecover.class, this::onSendGroupToRecover)
+            .match(TimeoutRecover.class, this::onTimeoutRecover)
+            .match(SendDataToRecover.class, this::onSendDataToRecover)
+            .matchAny(msg -> {})
             .build();
     }
 }
