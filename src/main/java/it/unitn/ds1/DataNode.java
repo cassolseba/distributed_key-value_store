@@ -301,7 +301,7 @@ public class DataNode extends AbstractActor {
     }
 
     public static class AskGroupToRecover implements Serializable {
-        public AskGroupToRecover() {};
+        public AskGroupToRecover() {}
     }
 
 
@@ -645,7 +645,7 @@ public class DataNode extends AbstractActor {
     public void onSendDataToRecover(SendDataToRecover msg) {
         nodeData.add(msg.data);
     }
-=======
+
     // DEBUG CLASSES AND FUNCTIONS
     // __________________________________________________________________________
     /**
@@ -716,6 +716,8 @@ public class DataNode extends AbstractActor {
             .match(AskCrash.class, this::onAskCrash)
             .match(AskGroupToRecover.class, this::onAskGroupToRecover)
             .match(AskDataToRecover.class, this::onAskDataToRecover)
+            .match(AskStatus.class, this::onAskStatus) // DEBUG
+            .match(PrintStatus.class, this::onPrintStatus) // DEBUG
             .build();
     }
 
@@ -726,8 +728,6 @@ public class DataNode extends AbstractActor {
             .match(TimeoutRecover.class, this::onTimeoutRecover)
             .match(SendDataToRecover.class, this::onSendDataToRecover)
             .matchAny(msg -> {})
-            .match(AskStatus.class, this::onAskStatus) // DEBUG
-            .match(PrintStatus.class, this::onPrintStatus) // DEBUG
             .build();
     }
 }
