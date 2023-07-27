@@ -25,6 +25,17 @@ public class GroupManager {
         public ActorRef getActorRef() { return node; }
     }
 
+    private int next(int i) {
+        return (i+1) % group.size();
+    }
+
+    private int prev(int i) {
+        if (i == 0) {
+            return group.size()-1;
+        }
+        return i-1;
+    }
+
     public void add(List<DataNodeRef> nodes) {
         this.group.addAll(nodes);
         Collections.sort(this.group, Comparator.comparing(p -> p.getNodeKey()));
@@ -40,13 +51,34 @@ public class GroupManager {
         int i = getIdx(dataKey);
         for (int j=0; j<N_replica; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
-            i = (i+1) % group.size();
+            i = next(i);
+        }
+        return dataNodes;
+    }
+
+    public List<ActorRef> find2KNeighbors(Integer dataKey) {
+        List<ActorRef> dataNodes = new ArrayList<>();
+        int idx = getIdx(dataKey);
+        int i = idx;
+        for (int j=0; j<N_replica; j++) {
+            dataNodes.add(this.group.get(i).getActorRef());
+            i = next(i);
+        }
+        i = prev(idx);
+        for (int j=0; j<N_replica; j++) {
+            dataNodes.add(this.group.get(i).getActorRef());
+            i = prev(i);
         }
         return dataNodes;
     }
 
     public void remove(ActorRef nodeRef) {
         group.removeIf(dataNode -> dataNode.getActorRef() == nodeRef);
+    }
+
+    public void addNewGroup(List<DataNodeRef> newGroup) {
+        group.clear();
+        add(newGroup);
     }
 
     public List<DataNodeRef> getGroup() {

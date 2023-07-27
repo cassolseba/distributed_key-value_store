@@ -61,6 +61,24 @@ public class DataManager {
         storage.put(key, new Data(value, version));
     }
 
+    public void add(Map<Integer, Data> newData) {
+        for (Map.Entry<Integer, Data> entry: newData.entrySet()) {
+            storage.merge(entry.getKey(), entry.getValue(),
+                    (oldValue, newValue) -> newValue.isNewer(oldValue)
+                                            ? newValue
+                                            : oldValue );
+        }
+//        for (Map.Entry e : newData.entrySet()) {
+//            if (!storage.containsKey(e.getKey())) {
+//                storage.put(e.getKey(), e.getValue());
+//            } else {
+//                if (e.getValue().isNewer(storage.get(e.getKeys()))) {
+//                    storage.put(e.getKey(), e.getValue());
+//                }
+//            }
+//        }
+    }
+
     public Data get(Integer key) {
         return storage.get(key);
     }

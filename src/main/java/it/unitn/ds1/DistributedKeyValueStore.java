@@ -19,6 +19,8 @@ import it.unitn.ds1.DataNode.InitializeDataGroup;
 import it.unitn.ds1.DataNode.AskNodeGroup;
 import it.unitn.ds1.DataNode.AskToJoin;
 import it.unitn.ds1.DataNode.AskToLeave;
+import it.unitn.ds1.DataNode.AskCrash;
+import it.unitn.ds1.DataNode.AskRecover;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 import it.unitn.ds1.logger.Logs;
 
@@ -117,11 +119,25 @@ public class DistributedKeyValueStore {
         inputContinue();
 
         // try leave of one dataNode
-        ActorRef leavingNode = group.get(rand.nextInt(group.size())).getActorRef();
+        int li = rand.nextInt(group.size());
+        ActorRef leavingNode = group.get(li).getActorRef();
+        group.remove(li);
         leavingNode.tell(new AskToLeave(), ActorRef.noSender());
 
         inputContinue();
 
+        // try crash
+        int crashNodeIdx = rand.nextInt(group.size());
+        ActorRef crashNode = group.get(crashNodeIdx).getActorRef();
+        crashNode.tell(new AskCrash(), ActorRef.noSender());
+
+        inputContinue();
+
+        // try crash
+        ActorRef recoverNode = group.get(rand.nextInt(group.size())).getActorRef();
+        crashNode.tell(new AskRecover(recoverNode), ActorRef.noSender());
+
+        inputContinue();
         system.terminate();
     }
 
