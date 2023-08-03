@@ -535,6 +535,9 @@ public class DataNode extends AbstractActor {
     public void onAskItems(AskItems msg) {
         Set<Integer> items = nodeData.getKeys();
         getSender().tell(new SendItems(items), self());
+
+        // logging
+        Logs.ask_keys(getSender().path().name(), self().path().name());
     }
 
     public void onSendItems(SendItems msg) {
@@ -545,11 +548,18 @@ public class DataNode extends AbstractActor {
                 node.tell(request, self());
             }
         }
+
+        // logging
+        Logs.items_reply(msg.keys.toString(), getSender().path().name(), self().path().name());
     }
 
     public void onAskItemData(AskItemData msg) {
         Data itemData = nodeData.get(msg.key);
         getSender().tell(new SendItemData(msg.key, itemData), self());
+
+        // logging
+        Logs.ask_data(msg.key, getSender().path().name(), self().path().name());
+
     }
 
     public void onSendItemData(SendItemData msg) {
@@ -566,13 +576,19 @@ public class DataNode extends AbstractActor {
             }
             groupM.add(new DataNodeRef(nodeKey, self()));  // add itself to his group
         }
+
+        // logging
+        Logs.data_reply(msg.key, msg.itemData, getSender().path().name(), self().path().name());
     }
 
     public void onAnnounceJoin(AnnounceJoin msg) {
         groupM.add(new DataNodeRef(msg.nodeKey, getSender()));
 
-        // check if the node need to drop items
+        // check if the node needs to drop items
         dropUselessItems();
+
+        // logging
+        Logs.join(msg.nodeKey, getSender().path().name(), self().path().name());
     }
 
     public void onAskToLeave(AskToLeave msg) {
@@ -582,35 +598,53 @@ public class DataNode extends AbstractActor {
             node.tell(new AnnounceLeave(), self());
         }
 
-        // send data to the node that will become responsible of
+        // send data to the node that will become responsible for
         groupM.remove(self());
         nodeData.getAllData().forEach( (k, v) -> {
                 for (ActorRef node : groupM.findDataNodes(k)) {
                     node.tell(new NewData(k, v), self());
                 }
         });
+
+        // logging
+        Logs.ask_leave(getSender().path().name(), self().path().name());
     }
 
     public void onAnnounceLeave(AnnounceLeave msg) {
         // remove the sender
         groupM.remove(getSender());
+
+        // logging
+        Logs.leave(getSender().path().name(), self().path().name());
     }
 
     public void onNewData(NewData msg) {
         nodeData.putNewData(msg.key, msg.data);
+
+        // logging
+        // TODO
     }
 
     public void onAskCrash(AskCrash msg) {
         crash();
+
+        // logging
+        Logs.crash(getSender().path().name(), self().path().name());
     }
 
     public void onAskRecover(AskRecover msg) {
         msg.node.tell(new AskGroupToRecover(), self());
+
+        // logging
+        Logs.recover(getSender().path().name(), self().path().name());
     }
 
     public void onAskGroupToRecover(AskGroupToRecover msg) {
         List<DataNodeRef> group = groupM.getGroup();
         getSender().tell(new SendGroupToRecover(group), self());
+
+        // logging
+        // TODO
     }
 
     public void onSendGroupToRecover(SendGroupToRecover msg) {
@@ -628,6 +662,9 @@ public class DataNode extends AbstractActor {
             new TimeoutRecover(),
             getContext().system().dispatcher(), getSelf()
         );
+
+        // logging
+        // TODO
     }
 
     public void onAskDataToRecover(AskDataToRecover msg) {
@@ -636,15 +673,25 @@ public class DataNode extends AbstractActor {
                 .filter(item -> groupM.findDataNodes(item.getKey()).contains(crashedNode))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         crashedNode.tell(new SendDataToRecover(dataToSend), self());
+
+        // logging
+        // TODO
     }
 
     public void onTimeoutRecover(TimeoutRecover msg) {
         recover();
+
+        // logging
+        // TODO
     }
 
     public void onSendDataToRecover(SendDataToRecover msg) {
         nodeData.add(msg.data);
+
+        // logging
+        // TODO
     }
+
 
     // DEBUG CLASSES AND FUNCTIONS
     // __________________________________________________________________________

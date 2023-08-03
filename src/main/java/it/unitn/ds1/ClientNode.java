@@ -107,10 +107,14 @@ public class ClientNode extends AbstractActor {
     }
 
     public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {
+        // logging
+        // TODO
         System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
     }
 
     public void onSendTimeoutW2Client(SendTimeoutW2Client msg) {
+        // logging
+        // TODO
         System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
     }
 

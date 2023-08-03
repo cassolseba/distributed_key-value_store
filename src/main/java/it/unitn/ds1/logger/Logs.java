@@ -1,5 +1,7 @@
 package it.unitn.ds1.logger;
 
+import it.unitn.ds1.DataManager;
+
 public class Logs {
     private final static long START_TIME = System.currentTimeMillis();
     public final static String FROM_NODE = " | from %s: %s";
@@ -12,6 +14,8 @@ public class Logs {
     private final static String DATA_FORMAT = "value: %s, version: %s, request id: %s";
     private final static String RESULT_FORMAT = "value: %s, request id: %s";
     private final static String VERSION_FORMAT = "version: %d, request id: %s";
+    private final static String ITEMS_FORMAT = "keys: %s";
+    private final static String KEY_FORMAT = "key: %d";
 
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
@@ -160,6 +164,68 @@ public class Logs {
                 String.format(TO_NODE, NodeType.DATA_NODE, joining);
         printLog(MessageType.GROUP_REPLY, msg);
     }
+
+    public static void ask_keys(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_KEYS, msg);
+    }
+
+    public static void items_reply(String keys, String sender, String receiver) {
+        String msg = String.format(ITEMS_FORMAT, keys) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ITEMS_REPLY, msg);
+    }
+
+    public static void ask_data(int key, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_DATA, msg);
+    }
+
+    public static void data_reply(int key, DataManager.Data data, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) + " " +
+                String.format(DATA_FORMAT, data.getValue(), data.getVersion(), "") +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.DATA_REPLY, msg);
+    }
+
+    public static void join(int key, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.JOIN, msg);
+    }
+
+    public static void ask_leave(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_LEAVE, msg);
+    }
+
+    public static void leave(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.LEAVE, msg);
+    }
+
+    public static void crash(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.CRASH, msg);
+    }
+
+    public static void recover(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+            String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.RECOVER, msg);
+    }
+
+
+
 
     /**
      * Produce the log for a STATUS CHECK operation
