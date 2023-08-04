@@ -2,6 +2,8 @@ package it.unitn.ds1.logger;
 
 import it.unitn.ds1.DataManager;
 
+import java.util.Map;
+
 public class Logs {
     private final static long START_TIME = System.currentTimeMillis();
     public final static String FROM_NODE = " | from %s: %s";
@@ -16,6 +18,7 @@ public class Logs {
     private final static String VERSION_FORMAT = "version: %d, request id: %s";
     private final static String ITEMS_FORMAT = "keys: %s";
     private final static String KEY_FORMAT = "key: %d";
+    private final static String NODE_FORMAT = "node: %s";
 
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
@@ -218,13 +221,35 @@ public class Logs {
         printLog(MessageType.CRASH, msg);
     }
 
-    public static void recover(String sender, String receiver) {
-        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
-            String.format(TO_NODE, NodeType.DATA_NODE, receiver);
-        printLog(MessageType.RECOVER, msg);
+    public static void ask_recover(String node, String sender, String receiver) {
+        String msg = String.format(NODE_FORMAT, node) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_RECOVER, msg);
     }
 
+    public static void data_recover(Map<Integer, DataManager.Data> data, String sender, String receiver) {
+        String spaces = " ";
+        spaces = spaces.repeat(24);
 
+        StringBuilder msg = new StringBuilder();
+        for (Map.Entry<Integer, DataManager.Data> entry: data.entrySet()) {
+            msg.append(String.format(KEY_FORMAT, entry.getKey()));
+            msg.append(" ");
+            msg.append(String.format(DATA_FORMAT, entry.getValue().getValue(), entry.getValue().getVersion(), "none"));
+            msg.append("\n");
+            msg.append(spaces);
+        }
+        msg.append(String.format(FROM_NODE, NodeType.DATA_NODE, sender));
+        msg.append(String.format(TO_NODE, NodeType.DATA_NODE, receiver));
+        printLog(MessageType.DATA_REPLY, msg.toString());
+    }
+
+    public static void timeout_recover(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.TIMEOUT, msg);
+    }
 
 
     /**
@@ -239,11 +264,4 @@ public class Logs {
                 String.format(FROM_NODE, NodeType.DATA_NODE, node);
         printLog(MessageType.STATUS, msg);
     }
-    public static void timeout() {}
-
-
-    // READ OPERATIONS
-
-    // WRITE OPERATIONS
-
 }

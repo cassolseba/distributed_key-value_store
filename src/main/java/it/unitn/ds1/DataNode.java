@@ -636,7 +636,7 @@ public class DataNode extends AbstractActor {
         msg.node.tell(new AskGroupToRecover(), self());
 
         // logging
-        Logs.recover(getSender().path().name(), self().path().name());
+        Logs.ask_recover(msg.node.path().name(), getSender().path().name(), self().path().name());
     }
 
     public void onAskGroupToRecover(AskGroupToRecover msg) {
@@ -644,7 +644,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendGroupToRecover(group), self());
 
         // logging
-        // TODO
+        Logs.ask_group(getSender().path().name(), self().path().name());
     }
 
     public void onSendGroupToRecover(SendGroupToRecover msg) {
@@ -664,7 +664,8 @@ public class DataNode extends AbstractActor {
         );
 
         // logging
-        // TODO
+        Logs.group_reply(getSender().path().name(), self().path().name());
+
     }
 
     public void onAskDataToRecover(AskDataToRecover msg) {
@@ -675,21 +676,21 @@ public class DataNode extends AbstractActor {
         crashedNode.tell(new SendDataToRecover(dataToSend), self());
 
         // logging
-        // TODO
+        Logs.ask_data(msg.crashedNodeId, getSender().path().name(), self().path().name());
     }
 
     public void onTimeoutRecover(TimeoutRecover msg) {
         recover();
 
         // logging
-        // TODO
+        Logs.timeout_recover(getSender().path().name(), self().path().name());
     }
 
     public void onSendDataToRecover(SendDataToRecover msg) {
         nodeData.add(msg.data);
 
         // logging
-        // TODO
+        Logs.data_recover(msg.data, getSender().path().name(), self().path().name());
     }
 
 
