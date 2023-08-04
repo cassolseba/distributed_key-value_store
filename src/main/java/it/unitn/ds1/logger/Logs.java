@@ -19,6 +19,7 @@ public class Logs {
     private final static String ITEMS_FORMAT = "keys: %s";
     private final static String KEY_FORMAT = "key: %d";
     private final static String NODE_FORMAT = "node: %s";
+    private final static String TIMEOUT_FORMAT = "request id: %s";
 
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
@@ -225,7 +226,7 @@ public class Logs {
         String msg = String.format(NODE_FORMAT, node) +
                 String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
                 String.format(TO_NODE, NodeType.DATA_NODE, receiver);
-        printLog(MessageType.ASK_RECOVER, msg);
+        printLog(MessageType.RECOVER, msg);
     }
 
     public static void data_recover(Map<Integer, DataManager.Data> data, String sender, String receiver) {
@@ -245,10 +246,27 @@ public class Logs {
         printLog(MessageType.DATA_REPLY, msg.toString());
     }
 
-    public static void timeout_recover(String sender, String receiver) {
-        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
-                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
-        printLog(MessageType.TIMEOUT, msg);
+    public static void timeout(TimeoutType type, String request_id, String sender, String receiver) {
+        switch (type) {
+            case RECOVER -> {
+                String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+                printLog(MessageType.RECOVER_TIMEOUT, msg);
+            }
+            case READ -> {
+                String msg = String.format(TIMEOUT_FORMAT, request_id) +
+                        String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.CLIENT, receiver);
+                printLog(MessageType.READ_TIMEOUT, msg);
+            }
+            case WRITE -> {
+                String msg = String.format(TIMEOUT_FORMAT, request_id) +
+                        String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.CLIENT, receiver);
+                printLog(MessageType.WRITE_TIMEOUT, msg);
+            }
+            default -> {}
+        }
     }
 
 

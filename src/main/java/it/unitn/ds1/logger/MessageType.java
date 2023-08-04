@@ -26,8 +26,10 @@ public enum MessageType {
     CLIENT_WRITE,
     CLIENT_UPDATE,
     CRASH,
-    ASK_RECOVER,
-    TIMEOUT,
+    RECOVER,
+    RECOVER_TIMEOUT,
+    READ_TIMEOUT,
+    WRITE_TIMEOUT,
     STATUS,
     ;
 
@@ -109,11 +111,17 @@ public enum MessageType {
             case CRASH -> {
                 return "CRASH";
             }
-            case ASK_RECOVER -> {
-                return "ASK_RECOVER";
+            case RECOVER -> {
+                return "RECOVER";
             }
-            case TIMEOUT -> {
-                return "TIMEOUT";
+            case RECOVER_TIMEOUT -> {
+                return "RECOVER_TIMEOUT";
+            }
+            case READ_TIMEOUT -> {
+                return "READ_TIMEOUT";
+            }
+            case WRITE_TIMEOUT -> {
+                return "WRITE_TIMEOUT";
             }
             case STATUS -> {
                 return "STATUS";

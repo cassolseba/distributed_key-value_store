@@ -2,6 +2,8 @@ package it.unitn.ds1;
 import akka.actor.*;
 import it.unitn.ds1.GroupManager.DataNodeRef;
 import it.unitn.ds1.logger.Logs;
+import it.unitn.ds1.logger.TimeoutType;
+import it.unitn.ds1.util.Helper;
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 import it.unitn.ds1.DataManager.Data;
@@ -26,7 +28,7 @@ public class DataNode extends AbstractActor {
         this.groupM = new GroupManager(N_replica);
 
         // Logging
-        System.out.println("INIT_NODE | Name: " + self().path().name() + ", key: " + nodeKey + " |");
+        System.out.println("INIT_NODE | Name: " + Helper.getName(self()) + ", key: " + nodeKey + " |");
     }
 
     static public Props props(int W_quorum, int R_quorum, int N_replica, int maxTimeout, int nodeKey) {
@@ -34,12 +36,12 @@ public class DataNode extends AbstractActor {
     }
 
     private void crash() {
-        System.out.println("DataNode " + self().path().name() + " crashed");
+        System.out.println("DataNode " + Helper.getName(self()) + " crashed");
         getContext().become(crashed());
     }
 
     private void recover() {
-        System.out.println("DataNode " + self().path().name() + " recovered");
+        System.out.println("DataNode " + Helper.getName(self()) + " recovered");
         getContext().become(createReceive());
     }
 
@@ -343,7 +345,7 @@ public class DataNode extends AbstractActor {
         groupM.add(msg.group);
 
         // logging
-        Logs.init_group(self().path().name());
+        Logs.init_group(Helper.getName(self()));
     }
 
     /**
@@ -360,7 +362,7 @@ public class DataNode extends AbstractActor {
         }
 
         // logging
-        Logs.ask_write(msg.key, msg.value, getSender().path().name(), self().path().name());
+        Logs.ask_write(msg.key, msg.value, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     /**
@@ -373,10 +375,10 @@ public class DataNode extends AbstractActor {
     public void onWriteData(WriteData msg) {
         nodeData.put(msg.key, msg.value);
         DataManager.Data elem = nodeData.get(msg.key);
-        //System.out.println("DataNode " + self().path().name() + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+        //System.out.println("DataNode " + Helper.getName(self()) + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
 
         // logging
-        Logs.write(msg.key, elem.getValue(), getSender().path().name(), self().path().name());
+        Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
     }
 
     /**
@@ -394,7 +396,7 @@ public class DataNode extends AbstractActor {
         }
 
         // logging
-        Logs.ask_read(msg.key, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.ask_read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
 
         getContext().system().scheduler().scheduleOnce(
             Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
@@ -417,7 +419,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendRead(readedData, msg.requestId), self());
 
         // logging
-        Logs.read(msg.key, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendRead(SendRead msg) {
@@ -431,7 +433,7 @@ public class DataNode extends AbstractActor {
                 client.tell(resp, self());
 
                 // logging
-                Logs.read_reply(msg.data.getValue(), msg.data.getVersion(), msg.requestId, self().path().name(), client.path().name());
+                Logs.read_reply(msg.data.getValue(), msg.data.getVersion(), msg.requestId, Helper.getName(self()), client.path().name());
             }
             default -> {}
         }
@@ -453,7 +455,7 @@ public class DataNode extends AbstractActor {
         }
 
         // logging
-        Logs.ask_update(msg.key, msg.value, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.ask_update(msg.key, msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskVersion(AskVersion msg) {
@@ -461,7 +463,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
 
         // logging
-        Logs.ask_version(msg.key, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendVersion(SendVersion msg) {
@@ -487,7 +489,7 @@ public class DataNode extends AbstractActor {
                 }
 
                 // logging
-                Logs.version_reply(msg.version, msg.requestId, getSender().path().name(), self().path().name());
+                Logs.version_reply(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
             }
 
             default -> {}
@@ -507,8 +509,8 @@ public class DataNode extends AbstractActor {
         DataManager.Data elem = nodeData.get(msg.key);
 
         // logging
-        Logs.update(msg.key, elem.getValue(), getSender().path().name(), self().path().name());
-        // System.out.println("DataNode " + self().path().name() + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+        Logs.update(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
+        // System.out.println("DataNode " + Helper.getName(self()) + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
     public void onAskToJoin(AskToJoin msg) {
@@ -520,7 +522,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendNodeGroup(group), self());
 
         // logging
-        Logs.ask_group(getSender().path().name(), self().path().name());
+        Logs.ask_group(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendNodeGroup(SendNodeGroup msg) {
@@ -529,7 +531,7 @@ public class DataNode extends AbstractActor {
         neighbor.tell(new AskItems(), self());
 
         // logging
-        Logs.group_reply(getSender().path().name(), self().path().name());
+        Logs.group_reply(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskItems(AskItems msg) {
@@ -537,7 +539,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendItems(items), self());
 
         // logging
-        Logs.ask_keys(getSender().path().name(), self().path().name());
+        Logs.ask_keys(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendItems(SendItems msg) {
@@ -550,7 +552,7 @@ public class DataNode extends AbstractActor {
         }
 
         // logging
-        Logs.items_reply(msg.keys.toString(), getSender().path().name(), self().path().name());
+        Logs.items_reply(msg.keys.toString(), Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskItemData(AskItemData msg) {
@@ -558,7 +560,7 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendItemData(msg.key, itemData), self());
 
         // logging
-        Logs.ask_data(msg.key, getSender().path().name(), self().path().name());
+        Logs.ask_data(msg.key, Helper.getName(getSender()), Helper.getName(self()));
 
     }
 
@@ -578,7 +580,7 @@ public class DataNode extends AbstractActor {
         }
 
         // logging
-        Logs.data_reply(msg.key, msg.itemData, getSender().path().name(), self().path().name());
+        Logs.data_reply(msg.key, msg.itemData, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAnnounceJoin(AnnounceJoin msg) {
@@ -588,11 +590,11 @@ public class DataNode extends AbstractActor {
         dropUselessItems();
 
         // logging
-        Logs.join(msg.nodeKey, getSender().path().name(), self().path().name());
+        Logs.join(msg.nodeKey, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskToLeave(AskToLeave msg) {
-        System.out.println("DataNode " + self().path().name() + " leaved");
+        System.out.println("DataNode " + Helper.getName(self()) + " leaved");
         // announce to others
         for (ActorRef node : groupM.getGroupActorRef()) {
             node.tell(new AnnounceLeave(), self());
@@ -607,7 +609,7 @@ public class DataNode extends AbstractActor {
         });
 
         // logging
-        Logs.ask_leave(getSender().path().name(), self().path().name());
+        Logs.ask_leave(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAnnounceLeave(AnnounceLeave msg) {
@@ -615,7 +617,7 @@ public class DataNode extends AbstractActor {
         groupM.remove(getSender());
 
         // logging
-        Logs.leave(getSender().path().name(), self().path().name());
+        Logs.leave(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onNewData(NewData msg) {
@@ -629,14 +631,14 @@ public class DataNode extends AbstractActor {
         crash();
 
         // logging
-        Logs.crash(getSender().path().name(), self().path().name());
+        Logs.crash(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskRecover(AskRecover msg) {
         msg.node.tell(new AskGroupToRecover(), self());
 
         // logging
-        Logs.ask_recover(msg.node.path().name(), getSender().path().name(), self().path().name());
+        Logs.ask_recover(msg.node.path().name(), Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onAskGroupToRecover(AskGroupToRecover msg) {
@@ -644,14 +646,14 @@ public class DataNode extends AbstractActor {
         getSender().tell(new SendGroupToRecover(group), self());
 
         // logging
-        Logs.ask_group(getSender().path().name(), self().path().name());
+        Logs.ask_group(Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendGroupToRecover(SendGroupToRecover msg) {
         groupM.addNewGroup(msg.group);
         dropUselessItems();
 
-//        System.out.print("Client " + self().path().name());
+//        System.out.print("Client " + Helper.getName(self()));
         for (ActorRef node : groupM.find2KNeighbors(nodeKey)) {
 //            System.out.print("Client " + node.path().name());
             node.tell(new AskDataToRecover(nodeKey), self());
@@ -664,7 +666,7 @@ public class DataNode extends AbstractActor {
         );
 
         // logging
-        Logs.group_reply(getSender().path().name(), self().path().name());
+        Logs.group_reply(Helper.getName(getSender()), Helper.getName(self()));
 
     }
 
@@ -676,21 +678,21 @@ public class DataNode extends AbstractActor {
         crashedNode.tell(new SendDataToRecover(dataToSend), self());
 
         // logging
-        Logs.ask_data(msg.crashedNodeId, getSender().path().name(), self().path().name());
+        Logs.ask_data(msg.crashedNodeId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onTimeoutRecover(TimeoutRecover msg) {
         recover();
 
         // logging
-        Logs.timeout_recover(getSender().path().name(), self().path().name());
+        Logs.timeout(TimeoutType.RECOVER, "", Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendDataToRecover(SendDataToRecover msg) {
         nodeData.add(msg.data);
 
         // logging
-        Logs.data_recover(msg.data, getSender().path().name(), self().path().name());
+        Logs.data_recover(msg.data, Helper.getName(getSender()), Helper.getName(self()));
     }
 
 
@@ -728,7 +730,7 @@ public class DataNode extends AbstractActor {
     public void onPrintStatus(PrintStatus msg) {
         for (int i: nodeData.getKeys()) {
             Data tmp = nodeData.get(i);
-            Logs.status(i, tmp.getValue(), tmp.getVersion(), self().path().name());
+            Logs.status(i, tmp.getValue(), tmp.getVersion(), Helper.getName(self()));
         }
     }
 
