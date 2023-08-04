@@ -7,18 +7,29 @@ public enum MessageType {
     ASK_UPDATE,
     ASK_VERSION,
     ASK_GROUP,
+    ASK_KEYS,
+    ASK_DATA,
+    ASK_LEAVE,
     READ,
     WRITE,
     UPDATE,
+    JOIN,
+    LEAVE,
     READ_REPLY,
     WRITE_REPLY,
     UPDATE_REPLY,
     VERSION_REPLY,
     GROUP_REPLY,
+    ITEMS_REPLY,
+    DATA_REPLY,
     CLIENT_READ,
     CLIENT_WRITE,
     CLIENT_UPDATE,
-    TIMEOUT,
+    CRASH,
+    RECOVER,
+    RECOVER_TIMEOUT,
+    READ_TIMEOUT,
+    WRITE_TIMEOUT,
     STATUS,
     ;
 
@@ -43,6 +54,15 @@ public enum MessageType {
             case ASK_GROUP -> {
                 return "ASK_GROUP";
             }
+            case ASK_KEYS -> {
+                return "ASK_KEYS";
+            }
+            case ASK_DATA -> {
+                return "ASK_DATA";
+            }
+            case ASK_LEAVE -> {
+                return "ASK_LEAVE";
+            }
             case READ -> {
                 return "READ";
             }
@@ -51,6 +71,12 @@ public enum MessageType {
             }
             case UPDATE -> {
                 return "UPDATE";
+            }
+            case JOIN -> {
+                return "JOIN";
+            }
+            case LEAVE -> {
+                return "LEAVE";
             }
             case READ_REPLY -> {
                 return "READ_REPLY";
@@ -67,6 +93,12 @@ public enum MessageType {
             case GROUP_REPLY -> {
                 return "GROUP_REPLY";
             }
+            case ITEMS_REPLY -> {
+                return "ITEMS_REPLY";
+            }
+            case DATA_REPLY -> {
+                return "DATA_REPLY";
+            }
             case CLIENT_READ -> {
                 return "CLIENT_READ";
             }
@@ -76,8 +108,20 @@ public enum MessageType {
             case CLIENT_UPDATE -> {
                 return "CLIENT_UPDATE";
             }
-            case TIMEOUT -> {
-                return "TIMEOUT";
+            case CRASH -> {
+                return "CRASH";
+            }
+            case RECOVER -> {
+                return "RECOVER";
+            }
+            case RECOVER_TIMEOUT -> {
+                return "RECOVER_TIMEOUT";
+            }
+            case READ_TIMEOUT -> {
+                return "READ_TIMEOUT";
+            }
+            case WRITE_TIMEOUT -> {
+                return "WRITE_TIMEOUT";
             }
             case STATUS -> {
                 return "STATUS";

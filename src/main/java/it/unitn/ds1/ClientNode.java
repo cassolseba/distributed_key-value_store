@@ -4,9 +4,11 @@ import java.io.Serializable;
 import akka.actor.*;
 import it.unitn.ds1.DataNode.*;
 import it.unitn.ds1.logger.Logs;
+import it.unitn.ds1.logger.TimeoutType;
+import it.unitn.ds1.util.Helper;
 
 /**
- * ClientNode
+ * Client Node
  * A class that extends AbstractActor.
  * Defines the client node behavior.
  */
@@ -15,7 +17,7 @@ public class ClientNode extends AbstractActor {
     private final Integer Id = 0;
 
     public ClientNode() {
-        System.out.println("CLIENT: is " + self().path().name());
+        System.out.println("CLIENT: is " + Helper.getName(self()));
     }
 
     static public Props props() {
@@ -68,7 +70,7 @@ public class ClientNode extends AbstractActor {
         msg.coordinator.tell(data, self());
 
         // logging
-        Logs.client_write(msg.key, msg.value, self().path().name(), msg.coordinator.path().name());
+        Logs.client_write(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
     public void onClientRead(ClientRead msg) {
@@ -79,39 +81,45 @@ public class ClientNode extends AbstractActor {
         msg.coordinator.tell(data, self());
 
         // logging
-        Logs.client_read(msg.key, self().path().name(), msg.coordinator.path().name());
+        Logs.client_read(msg.key, Helper.getName(self()), msg.coordinator.path().name());
     }
 
     public void onSendRead2Client(SendRead2Client msg) {
         // System.out.println("Client " + self().path() + " received value: " + msg.value);
 
         // logging
-        Logs.read_reply_on_client(msg.value, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.read_reply_on_client(msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onClientUpdate(ClientUpdate msg) {
         String requestId = self().path() + this.Id.toString();
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
-        //System.out.println("Client " + self().path() + ", create update request["
+        // System.out.println("Client " + self().path() + ", create update request["
         // + requestId + "]" + " for key:" + msg.key + " with value:" + msg.value);
         msg.coordinator.tell(data, self());
 
         // logging
-        Logs.client_update(msg.key, msg.value, self().path().name(), msg.coordinator.path().name());
+        Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
     public void onSendUpdate2Client(SendUpdate2Client msg) {
         // logging
-        Logs.update_reply_on_client(msg.version, msg.requestId, getSender().path().name(), self().path().name());
+        Logs.update_reply_on_client(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
     public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {
-        System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+        // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+
+        // logging
+        Logs.timeout(TimeoutType.READ, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     public void onSendTimeoutW2Client(SendTimeoutW2Client msg) {
-        System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+        // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+
+        // logging
+        Logs.timeout(TimeoutType.WRITE, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
     // DEBUG CLASSES AND FUNCTIONS

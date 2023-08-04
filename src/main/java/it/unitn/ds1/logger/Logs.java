@@ -1,5 +1,9 @@
 package it.unitn.ds1.logger;
 
+import it.unitn.ds1.DataManager;
+
+import java.util.Map;
+
 public class Logs {
     private final static long START_TIME = System.currentTimeMillis();
     public final static String FROM_NODE = " | from %s: %s";
@@ -12,6 +16,10 @@ public class Logs {
     private final static String DATA_FORMAT = "value: %s, version: %s, request id: %s";
     private final static String RESULT_FORMAT = "value: %s, request id: %s";
     private final static String VERSION_FORMAT = "version: %d, request id: %s";
+    private final static String ITEMS_FORMAT = "keys: %s";
+    private final static String KEY_FORMAT = "key: %d";
+    private final static String NODE_FORMAT = "node: %s";
+    private final static String TIMEOUT_FORMAT = "request id: %s";
 
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
@@ -161,6 +169,107 @@ public class Logs {
         printLog(MessageType.GROUP_REPLY, msg);
     }
 
+    public static void ask_keys(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_KEYS, msg);
+    }
+
+    public static void items_reply(String keys, String sender, String receiver) {
+        String msg = String.format(ITEMS_FORMAT, keys) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ITEMS_REPLY, msg);
+    }
+
+    public static void ask_data(int key, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_DATA, msg);
+    }
+
+    public static void data_reply(int key, DataManager.Data data, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) + " " +
+                String.format(DATA_FORMAT, data.getValue(), data.getVersion(), "") +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.DATA_REPLY, msg);
+    }
+
+    public static void join(int key, String sender, String receiver) {
+        String msg = String.format(KEY_FORMAT, key) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.JOIN, msg);
+    }
+
+    public static void ask_leave(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.ASK_LEAVE, msg);
+    }
+
+    public static void leave(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.LEAVE, msg);
+    }
+
+    public static void crash(String sender, String receiver) {
+        String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.CRASH, msg);
+    }
+
+    public static void ask_recover(String node, String sender, String receiver) {
+        String msg = String.format(NODE_FORMAT, node) +
+                String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+        printLog(MessageType.RECOVER, msg);
+    }
+
+    public static void data_recover(Map<Integer, DataManager.Data> data, String sender, String receiver) {
+        String spaces = " ";
+        spaces = spaces.repeat(24);
+
+        StringBuilder msg = new StringBuilder();
+        for (Map.Entry<Integer, DataManager.Data> entry: data.entrySet()) {
+            msg.append(String.format(KEY_FORMAT, entry.getKey()));
+            msg.append(" ");
+            msg.append(String.format(DATA_FORMAT, entry.getValue().getValue(), entry.getValue().getVersion(), "none"));
+            msg.append("\n");
+            msg.append(spaces);
+        }
+        msg.append(String.format(FROM_NODE, NodeType.DATA_NODE, sender));
+        msg.append(String.format(TO_NODE, NodeType.DATA_NODE, receiver));
+        printLog(MessageType.DATA_REPLY, msg.toString());
+    }
+
+    public static void timeout(TimeoutType type, String request_id, String sender, String receiver) {
+        switch (type) {
+            case RECOVER -> {
+                String msg = String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.DATA_NODE, receiver);
+                printLog(MessageType.RECOVER_TIMEOUT, msg);
+            }
+            case READ -> {
+                String msg = String.format(TIMEOUT_FORMAT, request_id) +
+                        String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.CLIENT, receiver);
+                printLog(MessageType.READ_TIMEOUT, msg);
+            }
+            case WRITE -> {
+                String msg = String.format(TIMEOUT_FORMAT, request_id) +
+                        String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
+                        String.format(TO_NODE, NodeType.CLIENT, receiver);
+                printLog(MessageType.WRITE_TIMEOUT, msg);
+            }
+            default -> {}
+        }
+    }
+
+
     /**
      * Produce the log for a STATUS CHECK operation
      * @param key is the key in the stored pair
@@ -173,11 +282,4 @@ public class Logs {
                 String.format(FROM_NODE, NodeType.DATA_NODE, node);
         printLog(MessageType.STATUS, msg);
     }
-    public static void timeout() {}
-
-
-    // READ OPERATIONS
-
-    // WRITE OPERATIONS
-
 }
