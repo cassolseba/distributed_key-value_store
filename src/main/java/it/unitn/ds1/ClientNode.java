@@ -1,4 +1,5 @@
 package it.unitn.ds1;
+
 import java.io.Serializable;
 
 import akka.actor.*;
@@ -33,8 +34,10 @@ public class ClientNode extends AbstractActor {
         public final Integer key;
         public final String value;
         public final ActorRef coordinator;
+
         public ClientWrite(Integer key, String value, ActorRef coordinator) {
-            this.key = key; this.value = value;
+            this.key = key;
+            this.value = value;
             this.coordinator = coordinator;
         }
     }
@@ -43,6 +46,7 @@ public class ClientNode extends AbstractActor {
     public static class ClientRead implements Serializable {
         public final Integer key;
         public final ActorRef coordinator;
+
         public ClientRead(Integer key, ActorRef coordinator) {
             this.key = key;
             this.coordinator = coordinator;
@@ -54,6 +58,7 @@ public class ClientNode extends AbstractActor {
         public final Integer key;
         public final String value;
         public final ActorRef coordinator;
+
         public ClientUpdate(Integer key, String value, ActorRef coordinator) {
             this.key = key;
             this.value = value;
@@ -102,20 +107,20 @@ public class ClientNode extends AbstractActor {
         Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
-    public void onSendUpdate2Client(SendUpdate2Client msg) {
+    public void onReturnUpdate(ReturnUpdate msg) {
         // logging
         Logs.update_reply_on_client(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
-    public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {
+    public void onReturnTimeoutOnRead(ReturnTimeoutOnRead msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
         // logging
         Logs.timeout(TimeoutType.READ, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
-    public void onSendTimeoutW2Client(SendTimeoutW2Client msg) {
+    public void onReturnTimeoutOnWrite(ReturnTimeoutOnWrite msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
         // logging
@@ -124,12 +129,14 @@ public class ClientNode extends AbstractActor {
 
     // DEBUG CLASSES AND FUNCTIONS
     // __________________________________________________________________________
+
     /**
      * Status request message.
      * Specify a coordinator that will start the status capture operation.
      */
     public static class StatusRequest implements Serializable {
         public final ActorRef coordinator;
+
         public StatusRequest(ActorRef coordinator) {
             this.coordinator = coordinator;
         }
@@ -137,6 +144,7 @@ public class ClientNode extends AbstractActor {
 
     /**
      * Status request handler.
+     *
      * @param msg is a StatusRequest message
      */
     public void onStatusRequest(StatusRequest msg) {
@@ -150,14 +158,14 @@ public class ClientNode extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-            .match(ClientWrite.class, this::onClientWrite)
-            .match(ClientRead.class, this::onClientRead)
-            .match(SendRead2Client.class, this::onSendRead2Client)
-            .match(ClientUpdate.class, this::onClientUpdate)
-            .match(SendUpdate2Client.class, this::onSendUpdate2Client)
-            .match(SendTimeoutR2Client.class, this::onSendTimeoutR2Client)
-            .match(SendTimeoutW2Client.class, this::onSendTimeoutW2Client)
+                .match(ClientWrite.class, this::onClientWrite)
+                .match(ClientRead.class, this::onClientRead)
+                .match(SendRead2Client.class, this::onSendRead2Client)
+                .match(ClientUpdate.class, this::onClientUpdate)
+                .match(ReturnUpdate.class, this::onReturnUpdate)
+                .match(ReturnTimeoutOnRead.class, this::onReturnTimeoutOnRead)
+                .match(ReturnTimeoutOnWrite.class, this::onReturnTimeoutOnWrite)
                 .match(StatusRequest.class, this::onStatusRequest) // ----- DEBUG -------
-            .build();
+                .build();
     }
 }

@@ -1,4 +1,5 @@
 package it.unitn.ds1;
+
 import java.util.*;
 
 /**
@@ -9,7 +10,7 @@ import java.util.*;
 public class DataManager {
     private final Map<Integer, Data> storage; // key - (value - version)
 
-    public DataManager () {
+    public DataManager() {
         this.storage = new HashMap<>();
     }
 
@@ -17,22 +18,31 @@ public class DataManager {
         private String value;
         private Integer version;
 
-        public Data (String value) {
-            this.value = value; this.version = 1;
+        public Data(String value) {
+            this.value = value;
+            this.version = 1;
         }
-        public Data (String value, Integer version) {
-            this.value = value; this.version = version;
+
+        public Data(String value, Integer version) {
+            this.value = value;
+            this.version = version;
         }
-        public Data (Data data2) {
-            this.value = data2.getValue(); this.version = data2.getVersion();
+
+        public String getValue() {
+            return this.value;
         }
-        public String getValue() { return this.value; }
-        public Integer getVersion() { return this.version; }
-        public void update(String newValue) {
-            value = newValue; version += 1;
+
+        public Integer getVersion() {
+            return this.version;
         }
-        public Boolean isNewer(Data data2) {
-            return this.version > data2.getVersion();
+
+        public void updateValue(String newValue) {
+            value = newValue;
+            version += 1;
+        }
+
+        public Boolean isNewer(Data data) {
+            return this.version > data.getVersion();
         }
     }
 
@@ -41,7 +51,7 @@ public class DataManager {
         if (oldData == null) {
             storage.put(key, new Data(value));
         } else {
-            oldData.update(value);
+            oldData.updateValue(value);
         }
     }
 
@@ -62,11 +72,11 @@ public class DataManager {
     }
 
     public void add(Map<Integer, Data> newData) {
-        for (Map.Entry<Integer, Data> entry: newData.entrySet()) {
+        for (Map.Entry<Integer, Data> entry : newData.entrySet()) {
             storage.merge(entry.getKey(), entry.getValue(),
                     (oldValue, newValue) -> newValue.isNewer(oldValue)
-                                            ? newValue
-                                            : oldValue );
+                            ? newValue
+                            : oldValue);
         }
 //        for (Map.Entry e : newData.entrySet()) {
 //            if (!storage.containsKey(e.getKey())) {
@@ -79,7 +89,7 @@ public class DataManager {
 //        }
     }
 
-    public Data get(Integer key) {
+    public Data getData(Integer key) {
         return storage.get(key);
     }
 
@@ -91,7 +101,7 @@ public class DataManager {
         return storage.get(key).getValue();
     }
 
-    public void remove(Integer key) {
+    public void removeData(Integer key) {
         System.out.println("[]" + getValue(key));
         storage.remove(key);
     }

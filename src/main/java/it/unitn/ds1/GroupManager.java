@@ -1,84 +1,92 @@
 package it.unitn.ds1;
+
 import java.util.*;
-import akka.japi.Pair;
-import akka.actor.Actor;
+
 import akka.actor.ActorRef;
+
 import java.util.stream.Collectors;
 
 public class GroupManager {
     private final List<DataNodeRef> group; // must be always sorted
-    public final int N_replica;
+    public final int replicas;
 
-    public GroupManager(int N_replica) {
+    public GroupManager(int replicas) {
         this.group = new ArrayList<>();
-        this.N_replica = N_replica;
+        this.replicas = replicas;
     }
 
     static public class DataNodeRef {
         private Integer nodeKey;
-        private ActorRef node;
+        private ActorRef nodeRef;
 
-        public DataNodeRef(Integer nodeKey, ActorRef node) {
-            this.nodeKey = nodeKey; this.node = node;
+        public DataNodeRef(Integer nodeKey, ActorRef nodeRef) {
+            this.nodeKey = nodeKey;
+            this.nodeRef = nodeRef;
         }
-        public Integer getNodeKey() { return nodeKey; }
-        public ActorRef getActorRef() { return node; }
+
+        public Integer getNodeKey() {
+            return nodeKey;
+        }
+
+        public ActorRef getActorRef() {
+            return nodeRef;
+        }
     }
 
-    private int next(int i) {
-        return (i+1) % group.size();
+    private int nextIndex(int i) {
+        return (i + 1) % group.size();
     }
 
-    private int prev(int i) {
+    private int previousIndex(int i) {
         if (i == 0) {
-            return group.size()-1;
+            return group.size() - 1;
         }
-        return i-1;
+        return i - 1;
     }
 
-    public void add(List<DataNodeRef> nodes) {
+    public void addNode(List<DataNodeRef> nodes) {
         this.group.addAll(nodes);
         Collections.sort(this.group, Comparator.comparing(p -> p.getNodeKey()));
     }
 
-    public void add(DataNodeRef node) {
-        int i = getIdx(node.getNodeKey());
+    public void addNode(DataNodeRef node) {
+        int i = getIndex(node.getNodeKey());
         group.add(i, node);
     }
 
     public List<ActorRef> findDataNodes(Integer dataKey) {
         List<ActorRef> dataNodes = new ArrayList<>();
-        int i = getIdx(dataKey);
-        for (int j=0; j<N_replica; j++) {
+        int i = getIndex(dataKey);
+        for (int j = 0; j < replicas; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
-            i = next(i);
+            i = nextIndex(i);
         }
         return dataNodes;
     }
 
-    public List<ActorRef> find2KNeighbors(Integer dataKey) {
+    public List<ActorRef> findNeighbors(Integer dataKey) {
         List<ActorRef> dataNodes = new ArrayList<>();
-        int idx = getIdx(dataKey);
+        int idx = getIndex(dataKey);
         int i = idx;
-        for (int j=0; j<N_replica; j++) {
+        for (int j = 0; j < replicas; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
-            i = next(i);
+            i = nextIndex(i);
         }
-        i = prev(idx);
-        for (int j=0; j<N_replica; j++) {
+        i = previousIndex(idx);
+        for (int j = 0; j < replicas; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
-            i = prev(i);
+            i = previousIndex(i);
         }
         return dataNodes;
     }
 
-    public void remove(ActorRef nodeRef) {
+    public void removeNode(ActorRef nodeRef) {
         group.removeIf(dataNode -> dataNode.getActorRef() == nodeRef);
     }
 
     public void addNewGroup(List<DataNodeRef> newGroup) {
         group.clear();
-        add(newGroup);
+        addNode(newGroup);
     }
 
     public List<DataNodeRef> getGroup() {
@@ -86,18 +94,19 @@ public class GroupManager {
     }
 
     public List<ActorRef> getGroupActorRef() {
-        return group.stream().map( elem -> elem.getActorRef() ).collect(Collectors.toList());
+        return group.stream().map(elem -> elem.getActorRef()).collect(Collectors.toList());
     }
 
     public ActorRef getClockwiseNeighbor(Integer dataKey) {
-        return this.group.get(getIdx(dataKey + 1)).getActorRef();
+        return this.group.get(getIndex(dataKey + 1)).getActorRef();
     }
 
-    private int getIdx(Integer dataKey) {
-        int i=0;
-        // is possible use faster implementations (quicksort)
-        if (this.group.get(this.group.size()-1).getNodeKey() > dataKey)
-            for (;this.group.get(i).getNodeKey()<dataKey; i++) {}
+    private int getIndex(Integer dataKey) {
+        int i = 0;
+        // is possible to use faster implementations (quicksort)
+        if (this.group.get(this.group.size() - 1).getNodeKey() > dataKey)
+            for (; this.group.get(i).getNodeKey() < dataKey; i++) {
+            }
         return i;
     }
 }
