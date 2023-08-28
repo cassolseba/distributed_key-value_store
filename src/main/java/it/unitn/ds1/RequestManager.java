@@ -111,9 +111,7 @@ public class RequestManager {
         NOT_OK
     }
 
-    ////////////////////////////
-    // methods for read requests
-    ////////////////////////////
+    /* ------- methods for read requests ------- */
 
     /**
      * Initialize a new read quorum
@@ -159,11 +157,8 @@ public class RequestManager {
         ReadReq.remove(requestId);
     }
 
-    /////////////////////////////
-    // methods for write requests
-    /////////////////////////////
 
-    // initialize a new update quorum
+    /* ------- methods for write requests ------- */
 
     /**
      * Initialize a new update quorum
@@ -177,7 +172,7 @@ public class RequestManager {
         WriteReq.put(requestId, new WriteReq(client, updateKey, updateValue));
     }
 
-    // used in add a update message
+    // used in add an update message
 
     /**
      * Used to add an update message

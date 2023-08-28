@@ -61,10 +61,7 @@ public class DataManager {
 
 
     public void putNewData(Integer key, Data itemData) {
-        Data oldData = storage.get(key);
-        if (oldData == null) {
-            storage.put(key, itemData);
-        }
+        storage.putIfAbsent(key, itemData);
     }
 
     public void putUpdate(Integer key, String value, Integer version) {

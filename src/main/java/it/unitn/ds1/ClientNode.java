@@ -22,7 +22,7 @@ public class ClientNode extends AbstractActor {
     }
 
     static public Props props() {
-        return Props.create(ClientNode.class, () -> new ClientNode());
+        return Props.create(ClientNode.class, ClientNode::new);
     }
 
     ////////////

@@ -492,8 +492,7 @@ public class DataNode extends AbstractActor {
                 // logging
                 Logs.read_reply(msg.data.getValue(), msg.data.getVersion(), msg.requestId, Helper.getName(self()), client.path().name());
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 

@@ -16,8 +16,8 @@ public class GroupManager {
     }
 
     static public class DataNodeRef {
-        private Integer nodeKey;
-        private ActorRef nodeRef;
+        private final Integer nodeKey;
+        private final ActorRef nodeRef;
 
         public DataNodeRef(Integer nodeKey, ActorRef nodeRef) {
             this.nodeKey = nodeKey;
@@ -46,7 +46,7 @@ public class GroupManager {
 
     public void addNode(List<DataNodeRef> nodes) {
         this.group.addAll(nodes);
-        Collections.sort(this.group, Comparator.comparing(p -> p.getNodeKey()));
+        this.group.sort(Comparator.comparing(DataNodeRef::getNodeKey));
     }
 
     public void addNode(DataNodeRef node) {
@@ -94,7 +94,7 @@ public class GroupManager {
     }
 
     public List<ActorRef> getGroupActorRef() {
-        return group.stream().map(elem -> elem.getActorRef()).collect(Collectors.toList());
+        return group.stream().map(DataNodeRef::getActorRef).collect(Collectors.toList());
     }
 
     public ActorRef getClockwiseNeighbor(Integer dataKey) {
@@ -103,7 +103,7 @@ public class GroupManager {
 
     private int getIndex(Integer dataKey) {
         int i = 0;
-        // is possible to use faster implementations (quicksort)
+        // it is possible to use faster implementations (quicksort)
         if (this.group.get(this.group.size() - 1).getNodeKey() > dataKey)
             for (; this.group.get(i).getNodeKey() < dataKey; i++) {
             }
