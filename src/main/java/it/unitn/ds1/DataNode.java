@@ -54,9 +54,7 @@ public class DataNode extends AbstractActor {
         nodeData.getKeys().removeIf(item -> !groupManager.findDataNodes(item).contains(self()));
     }
 
-    ////////////
-    // MESSAGES
-    ///////////
+    /* ------- MESSAGES ------- */
 
     // used to initialize the datanode group
     public static class InitializeDataGroup implements Serializable {
@@ -384,9 +382,7 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    ////////////
-    // HANDLERS
-    ////////////
+    /* ------- HANDLERS ------- */
 
     /**
      * Handler that set the actual group of nodes in this node.
@@ -479,8 +475,15 @@ public class DataNode extends AbstractActor {
         Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendRead message,
+     * adds the data to the read quorum.
+     * If the quorum is reached, the data is sent to the client.
+     * If the quorum is not reached, nothing happens.
+     * @param msg
+     */
     public void onSendRead(SendRead msg) {
-        switch (requestManager.addReadReq(msg.requestId, msg.data)) {
+        switch (requestManager.addReadResp(msg.requestId, msg.data)) {
             case OK -> {
                 // System.out.println("sending");
                 ActorRef client = requestManager.getClientReadReq(msg.requestId);
@@ -524,7 +527,7 @@ public class DataNode extends AbstractActor {
     }
 
     public void onSendVersion(SendVersion msg) {
-        switch (requestManager.addWriteReq(msg.requestId, msg.version)) {
+        switch (requestManager.addWriteResp(msg.requestId, msg.version)) {
             case OK -> {
                 ActorRef client = requestManager.getClientWriteReq(msg.requestId);
 

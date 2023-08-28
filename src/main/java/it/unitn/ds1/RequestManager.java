@@ -17,14 +17,14 @@ public class RequestManager {
     private final int readQuorum;
 
     //                 requestId, requestStatus
-    private final HashMap<String, WriteReq> WriteReq;
-    private final HashMap<String, ReadReq> ReadReq;
+    private final HashMap<String, WriteReq> writeReq;
+    private final HashMap<String, ReadReq> readReq;
 
     public RequestManager(int writeQuorum, int readQuorum) {
         this.writeQuorum = writeQuorum;
         this.readQuorum = readQuorum;
-        this.WriteReq = new HashMap<>();
-        this.ReadReq = new HashMap<>();
+        this.writeReq = new HashMap<>();
+        this.readReq = new HashMap<>();
     }
 
     private class ReadReq {
@@ -49,7 +49,7 @@ public class RequestManager {
             return quoredValue;
         }
 
-        public Boolean update(Data data) {
+        public Boolean updateQuorum(Data data) {
             totalCounter++;
             valueMap.put(data.getVersion(), data.getValue());
             counterMap.put(data.getVersion(), counterMap.getOrDefault(data.getVersion(), 0) + 1);
@@ -93,7 +93,7 @@ public class RequestManager {
             return updateKey;
         }
 
-        public Boolean update(Integer version) {
+        public Boolean updateQuorum(Integer version) {
             totalCounter++;
             counterMap.put(version, counterMap.getOrDefault(version, 0) + 1);
 
@@ -105,56 +105,62 @@ public class RequestManager {
         }
     }
 
-    public enum RequestManagerResp {
-        NOTHING,
-        OK,
-        NOT_OK
-    }
-
     /* ------- methods for read requests ------- */
 
     /**
      * Initialize a new read quorum
-     *
      * @param requestId Identifier of the request
      * @param client    Reference to client node
      */
     public void newReadReq(String requestId, ActorRef client) {
-        ReadReq.put(requestId, new ReadReq(client));
+        readReq.put(requestId, new ReadReq(client));
     }
 
     /**
-     * Used to add a read message
-     *
-     * @param requestId Identifier if the request
-     * @param data
+     * Update the quorum for a given read request
+     * @param requestId Identifier of the request
+     * @param data Data received from a data node
      * @return the decision {OK, NOTHING}
      */
-    public RequestManagerResp addReadReq(String requestId, Data data) {
-        ReadReq state = ReadReq.get(requestId);
+    public RequestManagerResp addReadResp(String requestId, Data data) {
+        ReadReq state = readReq.get(requestId);
         if (state == null)
             return RequestManagerResp.NOTHING;
-        if (state.update(data)) {
+        if (state.updateQuorum(data)) {
             return RequestManagerResp.OK;
         }
         return RequestManagerResp.NOTHING;
     }
 
     public Boolean isTimeoutOnRead(String requestId) {
-        ReadReq state = ReadReq.get(requestId);
+        ReadReq state = readReq.get(requestId);
         return state != null;
     }
 
+    /**
+     * Get the client reference for a given request
+     * @param requestId Identifier of the request
+     * @return the client reference
+     */
     public ActorRef getClientReadReq(String requestId) {
-        return ReadReq.get(requestId).client;
+        return readReq.get(requestId).client;
     }
 
+    /**
+     * Get the quored value for a given request
+     * @param requestId Identifier of the request
+     * @return the quored value
+     */
     public String getReadValue(String requestId) {
-        return ReadReq.get(requestId).getQuoredValue();
+        return readReq.get(requestId).getQuoredValue();
     }
 
+    /**
+     * Remove a read request
+     * @param requestId Identifier of the request to be removed
+     */
     public void removeReadReq(String requestId) {
-        ReadReq.remove(requestId);
+        readReq.remove(requestId);
     }
 
 
@@ -162,57 +168,61 @@ public class RequestManager {
 
     /**
      * Initialize a new update quorum
-     *
      * @param requestId   Identifier of the request
      * @param client      Reference to client node
      * @param updateKey   Key that identify data to update
      * @param updateValue New value to store for the specified key
      */
     public void newWriteReq(String requestId, ActorRef client, Integer updateKey, String updateValue) {
-        WriteReq.put(requestId, new WriteReq(client, updateKey, updateValue));
+        writeReq.put(requestId, new WriteReq(client, updateKey, updateValue));
     }
 
-    // used in add an update message
-
     /**
-     * Used to add an update message
-     *
+     * Update the quorum for a given update request
      * @param requestId Identifier of the request
-     * @param version
+     * @param version Version received from a data node
      * @return the decision {OK, NOTHING}
      */
-    public RequestManagerResp addWriteReq(String requestId, Integer version) {
-        WriteReq state = WriteReq.get(requestId);
+    public RequestManagerResp addWriteResp(String requestId, Integer version) {
+        WriteReq state = writeReq.get(requestId);
         if (state == null)
             return RequestManagerResp.NOTHING;
-        if (state.update(version)) {
+        if (state.updateQuorum(version)) {
             return RequestManagerResp.OK;
         }
         return RequestManagerResp.NOTHING;
     }
 
     public Boolean isTimeoutOnWrite(String requestId) {
-        WriteReq state = WriteReq.get(requestId);
+        WriteReq state = writeReq.get(requestId);
         return state != null;
     }
 
     public ActorRef getClientWriteReq(String requestId) {
-        return WriteReq.get(requestId).client;
+        return writeReq.get(requestId).client;
     }
 
     public Integer getVersionOnWrite(String requestId) {
-        return WriteReq.get(requestId).getQuoredVersion();
+        return writeReq.get(requestId).getQuoredVersion();
     }
 
     public void removeWriteReq(String requestId) {
-        WriteReq.remove(requestId);
+        writeReq.remove(requestId);
     }
 
     public String getNewValueOnWrite(String requestId) {
-        return WriteReq.get(requestId).getUpdateValue();
+        return writeReq.get(requestId).getUpdateValue();
     }
 
     public Integer getNewKeyOnWrite(String requestId) {
-        return WriteReq.get(requestId).getUpdateKey();
+        return writeReq.get(requestId).getUpdateKey();
+    }
+
+    /**
+     * Enum used to return the decision of the request manager
+     */
+    public enum RequestManagerResp {
+        NOTHING,
+        OK
     }
 }
