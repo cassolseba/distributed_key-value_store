@@ -601,7 +601,7 @@ public class DataNode extends AbstractActor {
     }
 
     public void onSendItems(SendItems msg) {
-        this.joinManager = new JoinManager(groupManager.replicas, msg.keys);
+        this.joinManager = new JoinManager(groupManager.replicasCount, msg.keys);
         for (Integer dataKey : msg.keys) {
             for (ActorRef node : groupManager.findDataNodes(dataKey)) {
                 AskItemData request = new AskItemData(dataKey);

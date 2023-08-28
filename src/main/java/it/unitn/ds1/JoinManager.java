@@ -7,14 +7,14 @@ import it.unitn.ds1.DataManager.Data;
 import java.util.*;
 
 public class JoinManager {
-    private final int replicas;
+    private final int replicasCount;
 
     private final HashMap<Integer, Data> mostUpdatedData;
     private final HashMap<Integer, Integer> counter;
     private final Set<Integer> items;
 
-    public JoinManager(int replicas, Set<Integer> items) {
-        this.replicas = replicas;
+    public JoinManager(int replicasCount, Set<Integer> items) {
+        this.replicasCount = replicasCount;
         this.items = new HashSet<>(items);
         this.counter = new HashMap<>();
         this.mostUpdatedData = new HashMap<>();
@@ -31,7 +31,7 @@ public class JoinManager {
         }
         counter.put(key, counter.getOrDefault(key, 0) + 1);
 
-        if (counter.getOrDefault(key, 0) == replicas) {
+        if (counter.getOrDefault(key, 0) == replicasCount) {
             items.remove(key);
         }
 

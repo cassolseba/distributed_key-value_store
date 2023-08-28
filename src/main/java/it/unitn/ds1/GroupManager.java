@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 
 public class GroupManager {
     private final List<DataNodeRef> group; // must be always sorted
-    public final int replicas;
+    public final int replicasCount;
 
-    public GroupManager(int replicas) {
+    public GroupManager(int replicasCount) {
         this.group = new ArrayList<>();
-        this.replicas = replicas;
+        this.replicasCount = replicasCount;
     }
 
     static public class DataNodeRef {
@@ -57,7 +57,7 @@ public class GroupManager {
     public List<ActorRef> findDataNodes(Integer dataKey) {
         List<ActorRef> dataNodes = new ArrayList<>();
         int i = getIndex(dataKey);
-        for (int j = 0; j < replicas; j++) {
+        for (int j = 0; j < replicasCount; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
             i = nextIndex(i);
         }
@@ -68,12 +68,12 @@ public class GroupManager {
         List<ActorRef> dataNodes = new ArrayList<>();
         int idx = getIndex(dataKey);
         int i = idx;
-        for (int j = 0; j < replicas; j++) {
+        for (int j = 0; j < replicasCount; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
             i = nextIndex(i);
         }
         i = previousIndex(idx);
-        for (int j = 0; j < replicas; j++) {
+        for (int j = 0; j < replicasCount; j++) {
             dataNodes.add(this.group.get(i).getActorRef());
             i = previousIndex(i);
         }
