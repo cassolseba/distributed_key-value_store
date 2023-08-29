@@ -580,7 +580,7 @@ public class DataNode extends AbstractActor {
      * adds the data to the read quorum.
      * If the quorum is reached, the data is sent to the client.
      * If the quorum is not reached, nothing happens.
-     * @param msg
+     * @param msg SendRead message
      */
     public void onSendRead(SendRead msg) {
         switch (requestManager.addReadResp(msg.requestId, msg.data)) {
@@ -599,7 +599,12 @@ public class DataNode extends AbstractActor {
         }
     }
 
-
+    /**
+     * Handler that, on receiving a TimeoutOnRead message,
+     * checks if the timeout is still valid.
+     * If it is, the read operation is aborted.
+     * @param msg TimeoutOnRead message
+     */
     public void onTimeoutOnRead(TimeoutOnRead msg) {
         if (requestManager.isTimeoutOnRead(msg.requestId)) {
             ActorRef client = requestManager.getClientReadReq(msg.requestId);
@@ -608,6 +613,11 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * Handler that, on receiving a onAskUpdateData message,
+     * sends a AskVersion message to the nodes that have the specified key.
+     * @param msg AskUpdateData message
+     */
     public void onAskUpdateData(AskUpdateData msg) {
         requestManager.newWriteReq(msg.requestId, getSender(), msg.key, msg.value);
         for (ActorRef node : groupManager.findDataNodes(msg.key)) {
@@ -619,6 +629,12 @@ public class DataNode extends AbstractActor {
         Logs.ask_update(msg.key, msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskVersion message,
+     * gets the version from this nodeData associated with the provided key
+     * and send back.
+     * @param msg AskVersion message
+     */
     public void onAskVersion(AskVersion msg) {
         Data readedData = nodeData.getData(msg.key);
         getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
@@ -627,6 +643,12 @@ public class DataNode extends AbstractActor {
         Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendVersion message,
+     * adds the version to the write quorum.
+     * If the quorum is reached, the data is sent to the client.
+     * @param msg SendVersion message
+     */
     public void onSendVersion(SendVersion msg) {
         switch (requestManager.addWriteResp(msg.requestId, msg.version)) {
             case OK -> {
@@ -658,6 +680,12 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * Handler that, on receiving a TimeoutOnWrite message,
+     * checks if the timeout is still valid.
+     * If it is, the write operation is aborted.
+     * @param msg TimeoutOnWrite message
+     */
     public void onTimeoutOnWrite(TimeoutOnWrite msg) {
         if (requestManager.isTimeoutOnWrite(msg.requestId)) {
             ActorRef client = requestManager.getClientWriteReq(msg.requestId);
@@ -666,6 +694,11 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * Handler that, on receiving an UpdateData message,
+     * updates the data associated with the provided key.
+     * @param msg UpdateData message
+     */
     public void onUpdateData(UpdateData msg) {
         nodeData.putUpdate(msg.key, msg.value, msg.version);
         DataManager.Data elem = nodeData.getData(msg.key);
@@ -675,10 +708,20 @@ public class DataNode extends AbstractActor {
         // System.out.println("DataNode " + Helper.getName(self()) + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
+    /**
+     * Handler that, on receiving an onAskToJoin message,
+     * sends a AskNodeGroup message to the bootstrapping node.
+     * @param msg AskToJoin message
+     */
     public void onAskToJoin(AskToJoin msg) {
         msg.bootstrappingNode.tell(new AskNodeGroup(), self());
     }
 
+    /**
+     * Handler that, on receiving an AskNodeGroup message,
+     * sends a SendNodeGroup message to the joining data node.
+     * @param msg AskNodeGroup message
+     */
     public void onAskNodeGroup(AskNodeGroup msg) {
         List<DataNodeRef> group = groupManager.getGroup();
         getSender().tell(new SendNodeGroup(group), self());
@@ -687,6 +730,12 @@ public class DataNode extends AbstractActor {
         Logs.ask_group(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendNodeGroup message,
+     * adds the group of nodes to this node
+     * and sends an AskItems message to the clockwise neighbor.
+     * @param msg SendNodeGroup message
+     */
     public void onSendNodeGroup(SendNodeGroup msg) {
         groupManager.addNode(msg.group);
         ActorRef neighbor = groupManager.getClockwiseNeighbor(nodeKey);
@@ -696,6 +745,11 @@ public class DataNode extends AbstractActor {
         Logs.group_reply(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskItems message,
+     * sends a SendItems message to the joining data node.
+     * @param msg AskItems message
+     */
     public void onAskItems(AskItems msg) {
         Set<Integer> items = nodeData.getKeys();
         getSender().tell(new SendItems(items), self());
@@ -704,6 +758,12 @@ public class DataNode extends AbstractActor {
         Logs.ask_keys(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendItems message,
+     * adds the items to the join manager
+     * and sends an AskItemData message to the data nodes that have the specified key.
+     * @param msg SendItems message
+     */
     public void onSendItems(SendItems msg) {
         this.joinManager = new JoinManager(groupManager.replicasCount, msg.keys);
         for (Integer dataKey : msg.keys) {
@@ -717,6 +777,11 @@ public class DataNode extends AbstractActor {
         Logs.items_reply(msg.keys.toString(), Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskItemData message,
+     * sends a SendItemData message to the joining data node.
+     * @param msg AskItemData message
+     */
     public void onAskItemData(AskItemData msg) {
         Data itemData = nodeData.getData(msg.key);
         getSender().tell(new SendItemData(msg.key, itemData), self());
@@ -726,6 +791,12 @@ public class DataNode extends AbstractActor {
 
     }
 
+    /**
+     * Handler that, on receiving a SendItemData message,
+     * adds the data to the join manager.
+     * If the join manager has all the data, it sends an AnnounceJoin message to the data nodes in the group.
+     * @param msg SendItemData message
+     */
     public void onSendItemData(SendItemData msg) {
         if (joinManager.addData(msg.key, msg.itemData)) {
             HashMap<Integer, Data> items = joinManager.getData();
@@ -745,6 +816,11 @@ public class DataNode extends AbstractActor {
         Logs.data_reply(msg.key, msg.itemData, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AnnounceJoin message,
+     * adds the node to the group.
+     * @param msg AnnounceJoin message
+     */
     public void onAnnounceJoin(AnnounceJoin msg) {
         groupManager.addNode(new DataNodeRef(msg.nodeKey, getSender()));
 
@@ -755,6 +831,11 @@ public class DataNode extends AbstractActor {
         Logs.join(msg.nodeKey, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskToLeave message,
+     * sends an AnnounceLeave message to the data nodes in the group.
+     * @param msg AskToLeave message
+     */
     public void onAskToLeave(AskToLeave msg) {
         System.out.println("DataNode " + Helper.getName(self()) + " leaved");
         // announce to others
@@ -774,6 +855,11 @@ public class DataNode extends AbstractActor {
         Logs.ask_leave(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AnnounceLeave message,
+     * removes the node from the group.
+     * @param msg AnnounceLeave message
+     */
     public void onAnnounceLeave(AnnounceLeave msg) {
         // remove the sender
         groupManager.removeNode(getSender());
@@ -782,6 +868,11 @@ public class DataNode extends AbstractActor {
         Logs.leave(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a NewData message,
+     * adds the data to the nodeData.
+     * @param msg NewData message
+     */
     public void onNewData(NewData msg) {
         nodeData.putNewData(msg.key, msg.data);
 
@@ -789,6 +880,11 @@ public class DataNode extends AbstractActor {
         // TODO
     }
 
+    /**
+     * Handler that, on receiving an AskCrash message,
+     * crashes the node.
+     * @param msg AskCrash message
+     */
     public void onAskCrash(AskCrash msg) {
         crash();
 
@@ -796,6 +892,11 @@ public class DataNode extends AbstractActor {
         Logs.crash(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskRecover message,
+     * sends an AskGroupToRecover message to the bootstrapping node.
+     * @param msg AskRecover message
+     */
     public void onAskRecover(AskRecover msg) {
         msg.node.tell(new AskGroupToRecover(), self());
 
@@ -803,6 +904,11 @@ public class DataNode extends AbstractActor {
         Logs.ask_recover(msg.node.path().name(), Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving an AskGroupToRecover message,
+     * sends a SendGroupToRecover message to the crashed node.
+     * @param msg AskGroupToRecover message
+     */
     public void onAskGroupToRecover(AskGroupToRecover msg) {
         List<DataNodeRef> group = groupManager.getGroup();
         getSender().tell(new SendGroupToRecover(group), self());
@@ -811,6 +917,12 @@ public class DataNode extends AbstractActor {
         Logs.ask_group(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendGroupToRecover message,
+     * adds the group of nodes to this node
+     * and sends an AskDataToRecover message to the data nodes that have the specified key.
+     * @param msg SendGroupToRecover message
+     */
     public void onSendGroupToRecover(SendGroupToRecover msg) {
         groupManager.addNewGroup(msg.group);
         dropUselessItems();
@@ -832,6 +944,11 @@ public class DataNode extends AbstractActor {
 
     }
 
+    /**
+     * Handler that, on receiving an AskDataToRecover message,
+     * sends a SendDataToRecover message to the crashed node.
+     * @param msg AskDataToRecover message
+     */
     public void onAskDataToRecover(AskDataToRecover msg) {
         ActorRef crashedNode = getSender();
         Map<Integer, Data> dataToSend = nodeData.getAllData().entrySet().stream()
@@ -843,6 +960,11 @@ public class DataNode extends AbstractActor {
         Logs.ask_data(msg.crashedNodeId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a TimeoutRecover message,
+     * recovers the node.
+     * @param msg TimeoutRecover message
+     */
     public void onTimeoutRecover(TimeoutRecover msg) {
         recover();
 
@@ -850,6 +972,11 @@ public class DataNode extends AbstractActor {
         Logs.timeout(TimeoutType.RECOVER, "", Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * Handler that, on receiving a SendDataToRecover message,
+     * adds the data to the nodeData.
+     * @param msg SendDataToRecover message
+     */
     public void onSendDataToRecover(SendDataToRecover msg) {
         nodeData.add(msg.data);
 
