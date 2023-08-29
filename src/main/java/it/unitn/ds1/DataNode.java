@@ -16,6 +16,10 @@ import java.util.stream.Collectors;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * DataNode
+ * Represent a data node in the system.
+ */
 public class DataNode extends AbstractActor {
     private final int maxTimeout; // in ms
     public final Integer nodeKey; // Node key
@@ -39,24 +43,34 @@ public class DataNode extends AbstractActor {
         return Props.create(DataNode.class, () -> new DataNode(writeQuorum, readQuorum, replicas, maxTimeout, nodeKey));
     }
 
+    /**
+     * Make the data node crash.
+     */
     private void crash() {
         System.out.println("DataNode " + Helper.getName(self()) + " crashed");
         getContext().become(crashed());
     }
 
+    /**
+     * Make the data node recover.
+     */
     private void recover() {
         System.out.println("DataNode " + Helper.getName(self()) + " recovered");
         getContext().become(createReceive());
     }
 
-    // can be optimized
+    /**
+     * Drop the items that are not in the group anymore.
+     */
     private void dropUselessItems() {
         nodeData.getKeys().removeIf(item -> !groupManager.findDataNodes(item).contains(self()));
     }
 
     /* ------- MESSAGES ------- */
 
-    // used to initialize the datanode group
+    /**
+     * A message that initializes the group of nodes in this node.
+     */
     public static class InitializeDataGroup implements Serializable {
         public final List<DataNodeRef> group;
 
@@ -65,8 +79,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the client and received by the coordinator datanode
-    // used to start write data procedure in the data nodes
+    /**
+     * A message that starts the write operation in the data nodes.
+     * It is sent by the client and received by the coordinator data node.
+     */
     public static class AskWriteData implements Serializable {
         public final Integer key;
         public final String value;
@@ -77,8 +93,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator to the proper datanode
-    // used to tell at the datanode to write the data
+    /**
+     * A message that tells the datanode to write the data.
+     * It is sent by the coordinator and received by the proper datanode.
+     */
     public static class WriteData implements Serializable {
         public final Integer key;
         public final String value;
@@ -89,9 +107,11 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the client and received by the coordinator datanode
-    // used to start the read data procedure in the data nodes
-    // requestId used to know who to answer the reading to
+    /**
+     * A message that starts the read operation in the data nodes.
+     * It is sent by the client and received by the coordinator data node.
+     * The requestId is used to know who to answer the read operation.
+     */
     public static class AskReadData implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -102,8 +122,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the proper data nodes
-    // used to request to read the data to the proper data nodes
+    /**
+     * A message that tells the datanode to read the data.
+     * It is sent by the coordinator and received by the proper datanode.
+     */
     public static class ReadData implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -114,8 +136,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the coordinator
-    // used to set a timout on a reading procedure
+    /**
+     * A message that set a timeout for the datanode during a read operation.
+     * It is sent by the coordinator and received by the coordinator.
+     */
     public static class TimeoutOnRead implements Serializable {
         public final String requestId;
 
@@ -124,9 +148,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the client
-    // used to tell the client that a timeout error occurred on the specified
-    // reading request
+    /**
+     * A message that tells the client that a timeout occurred during a certain read operation.
+     * It is sent by the coordinator and received by the client.
+     */
     public static class ReturnTimeoutOnRead implements Serializable {
         public final String requestId;
 
@@ -135,8 +160,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the data nodes and received by the coordinator
-    // used to send the data requested with the read to the coordinator (?)
+    /**
+     * A message that tells the result of a certain read operation to the coordinator.
+     * It is sent by the data nodes and received by the coordinator.
+     */
     public static class SendRead implements Serializable {
         public final Data data;
         public final String requestId;
@@ -147,8 +174,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator to the client
-    // used to send the properly read data to the client that requested it
+    /**
+     * A message that tells the result of a certain read operation to the client.
+     * It is sent by the coordinator and received by the client.
+     */
     public static class SendRead2Client implements Serializable {
         public final String value;
         public final String requestId;
@@ -159,9 +188,11 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the client and received by the coordinator datanode
-    // used to start the update data procedure in the data nodes
-    // requestId used to know who to answer the to
+    /**
+     * A message that starts the update data procedure in the data nodes.
+     * It is sent by the client and received by the coordinator datanode.
+     * The requestId is used to know who to answer the update operation.
+     */
     public static class AskUpdateData implements Serializable {
         public final Integer key;
         public final String value;
@@ -174,8 +205,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the proper data nodes
-    // used to request to read the version of the specified data to the proper data nodes
+    /**
+     * A message that ask the datanode the version of the specified data.
+     * It is sent by the coordinator and received by the proper datanode.
+     */
     public static class AskVersion implements Serializable {
         public final Integer key;
         public final String requestId;
@@ -186,8 +219,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the data nodes and received by the coordinator
-    // used to send the read version of the specified data to the coordinator
+    /**
+     * A message that tells the version of the specified data to the coordinator.
+     * It is sent by the data nodes and received by the coordinator.
+     */
     public static class SendVersion implements Serializable {
         public final Integer version;
         public final String requestId;
@@ -198,8 +233,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the coordinator
-    // used to set a timout on a reading procedure
+    /**
+     * A message that set a timeout for the datanode during a write operation.
+     * It is sent by the coordinator and received by the coordinator.
+     */
     public static class TimeoutOnWrite implements Serializable {
         public final String requestId;
 
@@ -208,9 +245,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator and received by the client
-    // used to tell the client that a timeout error occurred on the specified
-    // reading request
+    /**
+     * A message that tells the client that a timeout occurred during a certain write operation.
+     * It is sent by the coordinator and received by the client.
+     */
     public static class ReturnTimeoutOnWrite implements Serializable {
         public final String requestId;
 
@@ -219,8 +257,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator to the client
-    // used to send the version of the updated data to the client that requested it
+    /**
+     * A message that tells the result of a certain write operation to the coordinator.
+     * It is sent by the coordinator and received by the client.
+     */
     public static class ReturnUpdate implements Serializable {
         public final Integer version;
         public final String requestId;
@@ -231,8 +271,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the coordinator to the proper data nodes
-    // used to tell to the proper datanode to update the specified data
+    /**
+     * A message that tells the data node to update the specified data.
+     * It is sent by the coordinator and received by the proper data node.
+     */
     public static class UpdateData implements Serializable {
         public final Integer key;
         public final String value;
@@ -245,13 +287,19 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the joining datanode to the bootstrapping node
-    // used by a joining datanode to request the datanode group
+    /**
+     * A message that requests the group of nodes to the bootstrapping node.
+     * It is sent by the joining data node and received by the bootstrapping node.
+     */
     public static class AskNodeGroup implements Serializable {
         public AskNodeGroup() {
         }
     }
 
+    /**
+     * A message that starts the join operation.
+     * It is sent by the joining data node and received by the bootstrapping node.
+     */
     public static class AskToJoin implements Serializable {
         public ActorRef bootstrappingNode;
 
@@ -260,8 +308,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    // sent by the bootstrapping node to the joining datanode
-    // used to reply the ask for the group
+    /**
+     * A message that returns the group of nodes to the joining data node.
+     * It is sent by the bootstrapping node and received by the joining data node.
+     */
     public static class SendNodeGroup implements Serializable {
         public final List<DataNodeRef> group;
 
@@ -270,16 +320,25 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * TODO ??
+     */
     public static class AskDataToJoin implements Serializable {
         public AskDataToJoin() {
         }
     }
 
+    /**
+     * A message that requests the set of keys.
+     */
     public static class AskItems implements Serializable {
         public AskItems() {
         }
     }
 
+    /**
+     * A message that returns the set of keys.
+     */
     public static class SendItems implements Serializable {
         public final Set<Integer> keys;
 
@@ -288,6 +347,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that requests the data associated with the specified key.
+     * It is sent by the joining data node and received by the proper data node.
+     */
     public static class AskItemData implements Serializable {
         public Integer key;
 
@@ -296,6 +359,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that returns the data associated with the specified key.
+     * It is sent by the proper data node and received by the joining data node.
+     */
     public static class SendItemData implements Serializable {
         public Integer key;
         public Data itemData;
@@ -306,6 +373,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that announces the joining of a new data node.
+     * It is sent by the joining data node and received by the data nodes in the group.
+     */
     public static class AnnounceJoin implements Serializable {
         public Integer nodeKey;
 
@@ -314,16 +385,25 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that requests the leave operation.
+     */
     public static class AskToLeave implements Serializable {
         public AskToLeave() {
         }
     }
 
+    /**
+     * A message that announces the leaving of a data node.
+     */
     public static class AnnounceLeave implements Serializable {
         public AnnounceLeave() {
         }
     }
 
+    /**
+     * TODO ??
+     */
     public static class NewData implements Serializable {
         public Integer key;
         public Data data;
@@ -334,11 +414,17 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that requests the data node to crash.
+     */
     public static class AskCrash implements Serializable {
         public AskCrash() {
         }
     }
 
+    /**
+     * A message that requests the data node to recover.
+     */
     public static class AskRecover implements Serializable {
         public ActorRef node;
 
@@ -347,12 +433,17 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that requests the group of nodes to recover.
+     */
     public static class AskGroupToRecover implements Serializable {
         public AskGroupToRecover() {
         }
     }
 
-
+    /**
+     * A message that returns the group of nodes to recover.
+     */
     public static class SendGroupToRecover implements Serializable {
         public final List<DataNodeRef> group;
 
@@ -361,6 +452,9 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that requests the data associated with the specified key to recover.
+     */
     public static class AskDataToRecover implements Serializable {
         public Integer crashedNodeId;
 
@@ -369,6 +463,9 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * A message that returns the data associated with the specified key to recover.
+     */
     public static class SendDataToRecover implements Serializable {
         public Map<Integer, Data> data;
 
@@ -377,6 +474,9 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /**
+     * TODO ??
+     */
     public static class TimeoutRecover implements Serializable {
         public TimeoutRecover() {
         }
@@ -498,6 +598,7 @@ public class DataNode extends AbstractActor {
             default -> {}
         }
     }
+
 
     public void onTimeoutOnRead(TimeoutOnRead msg) {
         if (requestManager.isTimeoutOnRead(msg.requestId)) {
