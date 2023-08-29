@@ -27,6 +27,10 @@ public class RequestManager {
         this.readReq = new HashMap<>();
     }
 
+    /**
+     * Class used to store information about a read request
+     * It stores the responses from the nodes and keep in memory the most recent value according to the quorum
+     */
     private class ReadReq {
         private Integer totalCounter;
         private final int quorumVal;
@@ -45,10 +49,19 @@ public class RequestManager {
             this.valueMap = new HashMap<>();
         }
 
+        /**
+         * Get the most recent value for the request according to the responses received
+         * @return the most recent value
+         */
         public String getQuoredValue() {
             return quoredValue;
         }
 
+        /**
+         * Update the quorum for a given read request
+         * @param data Data received from a data node
+         * @return true if the quorum is reached, false otherwise
+         */
         public Boolean updateQuorum(Data data) {
             totalCounter++;
             valueMap.put(data.getVersion(), data.getValue());
@@ -62,6 +75,10 @@ public class RequestManager {
         }
     }
 
+    /**
+     * Class used to store information about an update request
+     * It stores the responses from the nodes and keep in memory the most recent version according to the quorum
+     */
     private class WriteReq {
         private Integer totalCounter;
         private final int quorumVal;
@@ -81,18 +98,35 @@ public class RequestManager {
             this.updateValue = updateValue;
         }
 
+        /**
+         * Get the most recent version for the request according to the responses received
+         * @return the most recent version
+         */
         public Integer getQuoredVersion() {
             return quoredVersion;
         }
 
+        /**
+         * Get the new value from the request
+         * @return the new value
+         */
         public String getUpdateValue() {
             return updateValue;
         }
 
+        /**
+         * Get the new key from the request
+         * @return the new key
+         */
         public Integer getUpdateKey() {
             return updateKey;
         }
 
+        /**
+         * Update the quorum for a given update request
+         * @param version Version received from a data node
+         * @return true if the quorum is reached, false otherwise
+         */
         public Boolean updateQuorum(Integer version) {
             totalCounter++;
             counterMap.put(version, counterMap.getOrDefault(version, 0) + 1);
@@ -132,6 +166,11 @@ public class RequestManager {
         return RequestManagerResp.NOTHING;
     }
 
+    /**
+     * Check if a read request is still active
+     * @param requestId Identifier of the request
+     * @return true if the request is still active, false otherwise
+     */
     public Boolean isTimeoutOnRead(String requestId) {
         ReadReq state = readReq.get(requestId);
         return state != null;
@@ -147,9 +186,9 @@ public class RequestManager {
     }
 
     /**
-     * Get the quored value for a given request
+     * Get the most recent value for a given request
      * @param requestId Identifier of the request
-     * @return the quored value
+     * @return the most recent value
      */
     public String getReadValue(String requestId) {
         return readReq.get(requestId).getQuoredValue();
@@ -193,27 +232,56 @@ public class RequestManager {
         return RequestManagerResp.NOTHING;
     }
 
+    /**
+     * Check if a write request is still active
+     * @param requestId Identifier of the request
+     * @return true if the request is still active, false otherwise
+     */
     public Boolean isTimeoutOnWrite(String requestId) {
         WriteReq state = writeReq.get(requestId);
         return state != null;
     }
 
+    /**
+     * Get the client reference for a given request
+     * @param requestId Identifier of the request
+     * @return the client reference
+     */
     public ActorRef getClientWriteReq(String requestId) {
         return writeReq.get(requestId).client;
     }
 
+    /**
+     * Get the most recent version for a given request
+     * @param requestId Identifier of the request
+     * @return the most recent version
+     */
     public Integer getVersionOnWrite(String requestId) {
         return writeReq.get(requestId).getQuoredVersion();
     }
 
+    /**
+     * Remove a write request
+     * @param requestId Identifier of the request to be removed
+     */
     public void removeWriteReq(String requestId) {
         writeReq.remove(requestId);
     }
 
+    /**
+     * Get the new value from the request
+     * @param requestId Identifier of the request
+     * @return the new value
+     */
     public String getNewValueOnWrite(String requestId) {
         return writeReq.get(requestId).getUpdateValue();
     }
 
+    /**
+     * Get the new key from the request
+     * @param requestId Identifier of the request
+     * @return the new key
+     */
     public Integer getNewKeyOnWrite(String requestId) {
         return writeReq.get(requestId).getUpdateKey();
     }
