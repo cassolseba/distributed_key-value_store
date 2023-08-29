@@ -1,8 +1,8 @@
-package it.unitn.ds1;
+package it.unitn.ds1.managers;
 
 import java.util.HashMap;
 
-import it.unitn.ds1.DataManager.Data;
+import it.unitn.ds1.managers.DataManager.Data;
 
 import java.util.*;
 

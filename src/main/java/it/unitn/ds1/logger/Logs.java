@@ -1,6 +1,6 @@
 package it.unitn.ds1.logger;
 
-import it.unitn.ds1.DataManager;
+import it.unitn.ds1.managers.DataManager;
 
 import java.util.Map;
 

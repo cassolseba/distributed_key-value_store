@@ -1,7 +1,11 @@
-package it.unitn.ds1;
+package it.unitn.ds1.actors;
 
 import akka.actor.*;
-import it.unitn.ds1.GroupManager.DataNodeRef;
+import it.unitn.ds1.managers.DataManager;
+import it.unitn.ds1.managers.GroupManager;
+import it.unitn.ds1.managers.GroupManager.DataNodeRef;
+import it.unitn.ds1.managers.JoinManager;
+import it.unitn.ds1.managers.RequestManager;
 import it.unitn.ds1.logger.Logs;
 import it.unitn.ds1.logger.TimeoutType;
 import it.unitn.ds1.util.Helper;
@@ -9,7 +13,7 @@ import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-import it.unitn.ds1.DataManager.Data;
+import it.unitn.ds1.managers.DataManager.Data;
 
 import java.util.stream.Collectors;
 
