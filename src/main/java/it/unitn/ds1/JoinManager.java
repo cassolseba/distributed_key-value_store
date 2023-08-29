@@ -6,6 +6,10 @@ import it.unitn.ds1.DataManager.Data;
 
 import java.util.*;
 
+/**
+ * JoinManager
+ * This class is used to manage the join operation of a new node.
+ */
 public class JoinManager {
     private final int replicasCount;
 
@@ -20,6 +24,13 @@ public class JoinManager {
         this.mostUpdatedData = new HashMap<>();
     }
 
+    /**
+     * Retrieve the data for a given key and add it to the mostUpdatedData map.
+     * If the data is already present, check if the new data is newer and replace it.
+     * @param key the key of the data
+     * @param receivedData the data to add
+     * @return true if all the data has been received, false otherwise
+     */
     public Boolean addData(Integer key, Data receivedData) {
         Data currentData = mostUpdatedData.get(key);
         if (currentData == null) {
@@ -38,6 +49,10 @@ public class JoinManager {
         return items.isEmpty();
     }
 
+    /**
+     * Get the data that has been received.
+     * @return the data that has been received
+     */
     public HashMap<Integer, Data> getData() {
         return mostUpdatedData;
     }
