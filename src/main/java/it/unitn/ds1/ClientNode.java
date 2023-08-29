@@ -25,11 +25,11 @@ public class ClientNode extends AbstractActor {
         return Props.create(ClientNode.class, ClientNode::new);
     }
 
-    ////////////
-    // MESSAGES
-    ///////////
+    /* ------- MESSAGES ------- */
 
-    // tell the client to start write procedure
+    /**
+     * A message used to request a write operation.
+     */
     public static class ClientWrite implements Serializable {
         public final Integer key;
         public final String value;
@@ -42,7 +42,9 @@ public class ClientNode extends AbstractActor {
         }
     }
 
-    // tell the client to start the read procedure
+    /**
+     * A message used to request a read operation.
+     */
     public static class ClientRead implements Serializable {
         public final Integer key;
         public final ActorRef coordinator;
@@ -53,7 +55,9 @@ public class ClientNode extends AbstractActor {
         }
     }
 
-    // tell the client to start the update procedure
+    /**
+     * A message used to request an update operation.
+     */
     public static class ClientUpdate implements Serializable {
         public final Integer key;
         public final String value;
@@ -66,10 +70,12 @@ public class ClientNode extends AbstractActor {
         }
     }
 
-    ////////////
-    // HANDLERS
-    ////////////
+    /* ------- HANDLERS ------- */
 
+    /**
+     * ClientWrite message handler.
+     * @param msg is a ClientWrite message
+     */
     public void onClientWrite(ClientWrite msg) {
         AskWriteData data = new AskWriteData(msg.key, msg.value);
         msg.coordinator.tell(data, self());
@@ -78,6 +84,10 @@ public class ClientNode extends AbstractActor {
         Logs.client_write(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
+    /**
+     * ClientRead message handler.
+     * @param msg is a ClientRead message
+     */
     public void onClientRead(ClientRead msg) {
         String requestId = self().path() + this.Id.toString();
         AskReadData data = new AskReadData(msg.key, requestId);
@@ -89,6 +99,10 @@ public class ClientNode extends AbstractActor {
         Logs.client_read(msg.key, Helper.getName(self()), msg.coordinator.path().name());
     }
 
+    /**
+     * SendRead2Client message handler.
+     * @param msg is a SendRead2Client message
+     */
     public void onSendRead2Client(SendRead2Client msg) {
         // System.out.println("Client " + self().path() + " received value: " + msg.value);
 
@@ -96,6 +110,10 @@ public class ClientNode extends AbstractActor {
         Logs.read_reply_on_client(msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * ClientUpdate message handler.
+     * @param msg is a ClientUpdate message
+     */
     public void onClientUpdate(ClientUpdate msg) {
         String requestId = self().path() + this.Id.toString();
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
@@ -107,12 +125,21 @@ public class ClientNode extends AbstractActor {
         Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
+    /**
+     * ReturnUpdate message handler.
+     * Return the updated value to the client.
+     * @param msg is a ReturnUpdate message
+     */
     public void onReturnUpdate(ReturnUpdate msg) {
         // logging
         Logs.update_reply_on_client(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
+    /**
+     * ReturnTimeoutOnRead message handler.
+     * @param msg is a ReturnTimeoutOnRead message
+     */
     public void onReturnTimeoutOnRead(ReturnTimeoutOnRead msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
@@ -120,6 +147,10 @@ public class ClientNode extends AbstractActor {
         Logs.timeout(TimeoutType.READ, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * ReturnTimeoutOnWrite message handler.
+     * @param msg is a ReturnTimeoutOnWrite message
+     */
     public void onReturnTimeoutOnWrite(ReturnTimeoutOnWrite msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
@@ -144,7 +175,7 @@ public class ClientNode extends AbstractActor {
 
     /**
      * Status request handler.
-     *
+     * Send a status request to the coordinator.
      * @param msg is a StatusRequest message
      */
     public void onStatusRequest(StatusRequest msg) {
