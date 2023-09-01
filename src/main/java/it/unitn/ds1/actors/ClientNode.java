@@ -1,11 +1,12 @@
-package it.unitn.ds1;
+package it.unitn.ds1.actors;
+
 import java.io.Serializable;
 
 import akka.actor.*;
-import it.unitn.ds1.DataNode.*;
+import it.unitn.ds1.actors.DataNode.*;
 import it.unitn.ds1.logger.Logs;
 import it.unitn.ds1.logger.TimeoutType;
-import it.unitn.ds1.util.Helper;
+import it.unitn.ds1.utils.Helper;
 
 /**
  * Client Node
@@ -21,39 +22,47 @@ public class ClientNode extends AbstractActor {
     }
 
     static public Props props() {
-        return Props.create(ClientNode.class, () -> new ClientNode());
+        return Props.create(ClientNode.class, ClientNode::new);
     }
 
-    ////////////
-    // MESSAGES
-    ///////////
+    /* ------- MESSAGES ------- */
 
-    // tell the client to start write procedure
+    /**
+     * A message used to request a write operation.
+     */
     public static class ClientWrite implements Serializable {
         public final Integer key;
         public final String value;
         public final ActorRef coordinator;
+
         public ClientWrite(Integer key, String value, ActorRef coordinator) {
-            this.key = key; this.value = value;
+            this.key = key;
+            this.value = value;
             this.coordinator = coordinator;
         }
     }
 
-    // tell the client to start the read procedure
+    /**
+     * A message used to request a read operation.
+     */
     public static class ClientRead implements Serializable {
         public final Integer key;
         public final ActorRef coordinator;
+
         public ClientRead(Integer key, ActorRef coordinator) {
             this.key = key;
             this.coordinator = coordinator;
         }
     }
 
-    // tell the client to start the update procedure
+    /**
+     * A message used to request an update operation.
+     */
     public static class ClientUpdate implements Serializable {
         public final Integer key;
         public final String value;
         public final ActorRef coordinator;
+
         public ClientUpdate(Integer key, String value, ActorRef coordinator) {
             this.key = key;
             this.value = value;
@@ -61,10 +70,12 @@ public class ClientNode extends AbstractActor {
         }
     }
 
-    ////////////
-    // HANDLERS
-    ////////////
+    /* ------- HANDLERS ------- */
 
+    /**
+     * ClientWrite message handler.
+     * @param msg is a ClientWrite message
+     */
     public void onClientWrite(ClientWrite msg) {
         AskWriteData data = new AskWriteData(msg.key, msg.value);
         msg.coordinator.tell(data, self());
@@ -73,6 +84,10 @@ public class ClientNode extends AbstractActor {
         Logs.client_write(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
+    /**
+     * ClientRead message handler.
+     * @param msg is a ClientRead message
+     */
     public void onClientRead(ClientRead msg) {
         String requestId = self().path() + this.Id.toString();
         AskReadData data = new AskReadData(msg.key, requestId);
@@ -84,6 +99,10 @@ public class ClientNode extends AbstractActor {
         Logs.client_read(msg.key, Helper.getName(self()), msg.coordinator.path().name());
     }
 
+    /**
+     * SendRead2Client message handler.
+     * @param msg is a SendRead2Client message
+     */
     public void onSendRead2Client(SendRead2Client msg) {
         // System.out.println("Client " + self().path() + " received value: " + msg.value);
 
@@ -91,6 +110,10 @@ public class ClientNode extends AbstractActor {
         Logs.read_reply_on_client(msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /**
+     * ClientUpdate message handler.
+     * @param msg is a ClientUpdate message
+     */
     public void onClientUpdate(ClientUpdate msg) {
         String requestId = self().path() + this.Id.toString();
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
@@ -102,20 +125,33 @@ public class ClientNode extends AbstractActor {
         Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
     }
 
-    public void onSendUpdate2Client(SendUpdate2Client msg) {
+    /**
+     * ReturnUpdate message handler.
+     * Return the updated value to the client.
+     * @param msg is a ReturnUpdate message
+     */
+    public void onReturnUpdate(ReturnUpdate msg) {
         // logging
         Logs.update_reply_on_client(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
-    public void onSendTimeoutR2Client(SendTimeoutR2Client msg) {
+    /**
+     * ReturnTimeoutOnRead message handler.
+     * @param msg is a ReturnTimeoutOnRead message
+     */
+    public void onReturnTimeoutOnRead(ReturnTimeoutOnRead msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
         // logging
         Logs.timeout(TimeoutType.READ, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
 
-    public void onSendTimeoutW2Client(SendTimeoutW2Client msg) {
+    /**
+     * ReturnTimeoutOnWrite message handler.
+     * @param msg is a ReturnTimeoutOnWrite message
+     */
+    public void onReturnTimeoutOnWrite(ReturnTimeoutOnWrite msg) {
         // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
 
         // logging
@@ -124,12 +160,14 @@ public class ClientNode extends AbstractActor {
 
     // DEBUG CLASSES AND FUNCTIONS
     // __________________________________________________________________________
+
     /**
      * Status request message.
      * Specify a coordinator that will start the status capture operation.
      */
     public static class StatusRequest implements Serializable {
         public final ActorRef coordinator;
+
         public StatusRequest(ActorRef coordinator) {
             this.coordinator = coordinator;
         }
@@ -137,6 +175,7 @@ public class ClientNode extends AbstractActor {
 
     /**
      * Status request handler.
+     * Send a status request to the coordinator.
      * @param msg is a StatusRequest message
      */
     public void onStatusRequest(StatusRequest msg) {
@@ -150,14 +189,14 @@ public class ClientNode extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-            .match(ClientWrite.class, this::onClientWrite)
-            .match(ClientRead.class, this::onClientRead)
-            .match(SendRead2Client.class, this::onSendRead2Client)
-            .match(ClientUpdate.class, this::onClientUpdate)
-            .match(SendUpdate2Client.class, this::onSendUpdate2Client)
-            .match(SendTimeoutR2Client.class, this::onSendTimeoutR2Client)
-            .match(SendTimeoutW2Client.class, this::onSendTimeoutW2Client)
+                .match(ClientWrite.class, this::onClientWrite)
+                .match(ClientRead.class, this::onClientRead)
+                .match(SendRead2Client.class, this::onSendRead2Client)
+                .match(ClientUpdate.class, this::onClientUpdate)
+                .match(ReturnUpdate.class, this::onReturnUpdate)
+                .match(ReturnTimeoutOnRead.class, this::onReturnTimeoutOnRead)
+                .match(ReturnTimeoutOnWrite.class, this::onReturnTimeoutOnWrite)
                 .match(StatusRequest.class, this::onStatusRequest) // ----- DEBUG -------
-            .build();
+                .build();
     }
 }
