@@ -53,7 +53,13 @@ public class Main {
         /* Wait for the writes to be completed */
         Thread.sleep(2500);
 
+        database.statusMessage(firstClient);
+
+        Thread.sleep(2500);
+
         /* ----- TESTS ----- */
+
+        /* ---- READ ---- */
 
         // test 1: read from a key
         // TODO fix READ_REPLY names, it seems duplicated but it is not
@@ -63,28 +69,53 @@ public class Main {
         // TODO handle read from unknown key
 //        database.sendReadFromClient(firstClient, firstDataNode, 21);
 
-        // test 3: update a value in the database
-//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
-
-        // test 4: update an unknown key
-        // TODO handle update from unknown key
-//        database.sendUpdateFromClient(firstClient, firstDataNode, 21, "TWENTY-ONE");
-
-        // test 5: read a key twice from the same client and the same coordinator
+        // test 3: read a key twice from the same client and the same coordinator
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
-        // test 6: read a key from two different clients and two different coordinators
+        // test 4: read a key from two different clients and two different coordinators
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(secondClient, secondDataNode, 17);
 
-        // test 7: read a key from two different clients and the same coordinator
+        // test 5: read a key from two different clients and the same coordinator
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(secondClient, firstDataNode, 17);
 
+        // test 6: read a key and make an interested node crash
+//        database.sendReadFromClient(firstClient, firstDataNode, 43);
+//        database.crash(fourthDataNode);
 
+        /* ---- UPDATE ---- */
 
+        // test 1: update a value in the database
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 
+        // test 2: update an unknown key
+        // TODO handle update from unknown key
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 21, "TWENTY-ONE");
+
+        // test 3: read a key, then write a new value and read again
+//        database.sendReadFromClient(firstClient, firstDataNode, 17);
+//        Thread.sleep(1500);
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+//        Thread.sleep(1500);
+//        database.sendReadFromClient(firstClient, firstDataNode, 17);
+
+        // test 4: read a key and write at the same key at the same time
+//        database.sendReadFromClient(firstClient, firstDataNode, 17);
+//        database.sendUpdateFromClient(secondClient, secondDataNode, 17, "SE-VEN-TEEN");
+
+        // test 5: update two times from the same client and different coordinators
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+//        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
+
+        // test 6: update two times from the same client and the same coordinator
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEEEEN");
+
+        // test 7: update a key and make an interested node crash
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+//        database.crash(secondDataNode);
 
         Thread.sleep(10000);
         System.exit(0);
