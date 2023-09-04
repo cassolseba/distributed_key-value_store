@@ -16,9 +16,9 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 3;
-    private static final int W = 2;
-    private static final int R = 2;
+    private static final int N = 5;
+    private static final int W = 4;
+    private static final int R = 4;
     private static final int T = 1000;
     private static final int dataNodeCount = 5;
     private static final int dataCount = 10;
@@ -45,6 +45,7 @@ public class Main {
         Thread.sleep(2500);
 
         /* Insert some data in the distributed database */
+        // TODO initial data items should be inserted using the update method
         database.sendWriteFromClient(firstClient, firstDataNode, 5, "FIVE");
         database.sendWriteFromClient(firstClient, firstDataNode, 17, "SEVENTEEN");
         database.sendWriteFromClient(firstClient, firstDataNode, 29, "TWENTY-NINE");
@@ -116,6 +117,9 @@ public class Main {
         // test 7: update a key and make an interested node crash
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 //        database.crash(secondDataNode);
+
+        Thread.sleep(2000);
+        database.statusMessage(firstClient);
 
         Thread.sleep(10000);
         System.exit(0);
