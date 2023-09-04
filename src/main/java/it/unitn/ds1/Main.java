@@ -63,7 +63,6 @@ public class Main {
         /* ---- READ ---- */
 
         // test 1: read from a key
-        // TODO fix READ_REPLY names, it seems duplicated but it is not
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
         // test 2: read form an unknown key

@@ -22,6 +22,7 @@ public enum MessageType {
     GROUP_REPLY,
     ITEMS_REPLY,
     DATA_REPLY,
+    READ_RESULT,
     CLIENT_READ,
     CLIENT_WRITE,
     CLIENT_UPDATE,
@@ -98,6 +99,9 @@ public enum MessageType {
             }
             case DATA_REPLY -> {
                 return "DATA_REPLY";
+            }
+            case READ_RESULT -> {
+                return "READ_RESULT";
             }
             case CLIENT_READ -> {
                 return "CLIENT_READ";

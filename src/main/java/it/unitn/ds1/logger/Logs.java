@@ -120,7 +120,7 @@ public class Logs {
         String msg = String.format(RESULT_FORMAT, value, request_id) +
                 String.format(FROM_NODE, NodeType.DATA_NODE, node) +
                 String.format(TO_NODE, NodeType.CLIENT, client);
-        printLog(MessageType.READ_REPLY, msg);
+        printLog(MessageType.READ_RESULT, msg);
     }
 
     public static void ask_update(int key, String value, String request_id, String client, String coordinator) {
