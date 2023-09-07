@@ -51,7 +51,6 @@ public class DataNode extends AbstractActor {
      * Make the data node crash.
      */
     private void crash() {
-        System.out.println("DataNode " + Helper.getName(self()) + " crashed");
         getContext().become(crashed());
     }
 
@@ -59,7 +58,6 @@ public class DataNode extends AbstractActor {
      * Make the data node recover.
      */
     private void recover() {
-        System.out.println("DataNode " + Helper.getName(self()) + " recovered");
         getContext().become(createReceive());
     }
 
