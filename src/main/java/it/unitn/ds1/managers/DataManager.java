@@ -175,4 +175,8 @@ public class DataManager {
     public Map<Integer, Data> getAllData() {
         return storage;
     }
+
+    public Boolean isPresent(Integer key) {
+        return storage.containsKey(key);
+    }
 }
