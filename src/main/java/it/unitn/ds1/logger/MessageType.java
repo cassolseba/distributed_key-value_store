@@ -32,6 +32,8 @@ public enum MessageType {
     READ_TIMEOUT,
     WRITE_TIMEOUT,
     STATUS,
+    UNKNOWN_KEY_ERROR,
+    EXISTING_KEY_ERROR,
     ;
 
     @Override
@@ -129,6 +131,12 @@ public enum MessageType {
             }
             case STATUS -> {
                 return "STATUS";
+            }
+            case UNKNOWN_KEY_ERROR -> {
+                return "UNKNOWN_KEY_ERROR";
+            }
+            case EXISTING_KEY_ERROR -> {
+                return "EXISTING_KEY_ERROR";
             }
             default -> {
                 return "";
