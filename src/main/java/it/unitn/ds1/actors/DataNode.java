@@ -1,6 +1,7 @@
 package it.unitn.ds1.actors;
 
 import akka.actor.*;
+import it.unitn.ds1.logger.ErrorType;
 import it.unitn.ds1.managers.DataManager;
 import it.unitn.ds1.managers.GroupManager;
 import it.unitn.ds1.managers.GroupManager.DataNodeRef;
@@ -526,11 +527,16 @@ public class DataNode extends AbstractActor {
      * @see Data
      */
     public void onWriteData(WriteData msg) {
-        nodeData.put(msg.key, msg.value);
-        DataManager.Data elem = nodeData.getData(msg.key);
+        if (!nodeData.isPresent(msg.key)) {
+            nodeData.put(msg.key, msg.value);
+            DataManager.Data elem = nodeData.getData(msg.key);
 
-        // logging
-        Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
+            // logging
+            Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
+        } else {
+            // TODO handle existing key error
+            Logs.error(ErrorType.EXISTING_KEY, msg.key, Helper.getName(self()));
+        }
     }
 
     /**
@@ -577,7 +583,7 @@ public class DataNode extends AbstractActor {
             Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         } else {
             // TODO handle unknown key
-            System.out.println("Unknown key: " + msg.key);
+            Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(sender()));
         }
     }
 
@@ -650,7 +656,7 @@ public class DataNode extends AbstractActor {
             Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
         } else {
             // TODO handle unknown key
-            System.out.println("Unknown key: " + msg.key);
+            Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(self()));
         }
     }
 
