@@ -67,7 +67,7 @@ public class Main {
 
         // test 2: read form an unknown key
         // TODO handle read from unknown key
-//        database.sendReadFromClient(firstClient, firstDataNode, 21);
+        database.sendReadFromClient(firstClient, firstDataNode, 21);
 
         // test 3: read a key twice from the same client and the same coordinator
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);

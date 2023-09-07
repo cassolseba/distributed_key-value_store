@@ -528,7 +528,6 @@ public class DataNode extends AbstractActor {
     public void onWriteData(WriteData msg) {
         nodeData.put(msg.key, msg.value);
         DataManager.Data elem = nodeData.getData(msg.key);
-        //System.out.println("DataNode " + Helper.getName(self()) + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
 
         // logging
         Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
@@ -570,11 +569,16 @@ public class DataNode extends AbstractActor {
      * @see Data
      */
     public void onReadData(ReadData msg) {
-        Data readedData = nodeData.getData(msg.key);
-        getSender().tell(new SendRead(readedData, msg.requestId), self());
+        if (nodeData.isPresent(msg.key)) {
+            Data readedData = nodeData.getData(msg.key);
+            getSender().tell(new SendRead(readedData, msg.requestId), self());
 
-        // logging
-        Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            // logging
+            Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+        } else {
+            // TODO handle unknown key
+            System.out.println("Unknown key: " + msg.key);
+        }
     }
 
     /**
@@ -638,11 +642,16 @@ public class DataNode extends AbstractActor {
      * @param msg AskVersion message
      */
     public void onAskVersion(AskVersion msg) {
-        Data readedData = nodeData.getData(msg.key);
-        getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
+        if (nodeData.isPresent(msg.key)) {
+            Data readedData = nodeData.getData(msg.key);
+            getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
 
-        // logging
-        Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            // logging
+            Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+        } else {
+            // TODO handle unknown key
+            System.out.println("Unknown key: " + msg.key);
+        }
     }
 
     /**
