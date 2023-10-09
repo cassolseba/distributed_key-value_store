@@ -580,6 +580,7 @@ public class DataNode extends AbstractActor {
      */
     public void onReadData(ReadData msg) {
         Data readedData = nodeData.getData(msg.key);
+        if (readedData == null) { return; }
         getSender().tell(new SendRead(readedData, msg.requestId), self());
 
         // logging
