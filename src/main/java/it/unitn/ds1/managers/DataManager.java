@@ -9,9 +9,11 @@ import java.util.*;
  */
 public class DataManager {
     private final Map<Integer, Data> storage; // key - (value - version)
+    private final Map<Integer, Boolean> blocks;
 
     public DataManager() {
         this.storage = new HashMap<>();
+        this.blocks  = new HashMap<>();
     }
 
     /**
@@ -80,6 +82,7 @@ public class DataManager {
         } else {
             oldData.updateValue(value);
         }
+        blocks.put(key, false);
     }
 
     /**
@@ -89,6 +92,7 @@ public class DataManager {
      */
     public void putData(Integer key, Data itemData) {
         storage.put(key, itemData);
+        blocks.put(key, false);
     }
 
     /**
@@ -99,6 +103,7 @@ public class DataManager {
      */
     public void putNewData(Integer key, Data itemData) {
         storage.putIfAbsent(key, itemData);
+        blocks.put(key, false);
     }
 
     /**
@@ -107,8 +112,9 @@ public class DataManager {
      * @param value the value of the data item
      * @param version the version of the data item
      */
-    public void putUpdate(Integer key, String value, Integer version) {
+    public void putUpdateAndRemoveBlock(Integer key, String value, Integer version) {
         storage.put(key, new Data(value, version));
+        blocks.put(key, false);
     }
 
     /**
@@ -121,6 +127,7 @@ public class DataManager {
                     (oldValue, newValue) -> newValue.isNewer(oldValue)
                             ? newValue
                             : oldValue);
+            blocks.putIfAbsent(entry.getKey(), false);
         }
 //        for (Map.Entry e : newData.entrySet()) {
 //            if (!storage.containsKey(e.getKey())) {
@@ -138,7 +145,21 @@ public class DataManager {
      * @param key the key of the data item
      * @return the data item
      */
+    public Data getDataAndBlock(Integer key) {
+        if (blocks.get(key) != null) {
+            blocks.put(key, true);
+        }
+        return storage.get(key);
+    }
+
+    public void removeBlock(Integer key) {
+        blocks.put(key, false);
+    }
+
     public Data getData(Integer key) {
+        if (blocks.get(key) == true) {
+            return null;
+        }
         return storage.get(key);
     }
 
@@ -156,6 +177,9 @@ public class DataManager {
      * @return the value of the data item
      */
     public String getValue(Integer key) {
+        if (blocks.get(key) == true) {
+            return null;
+        }
         return storage.get(key).getValue();
     }
 
@@ -166,6 +190,7 @@ public class DataManager {
     public void removeData(Integer key) {
         System.out.println("[]" + getValue(key));
         storage.remove(key);
+        blocks.remove(key);
     }
 
     /**

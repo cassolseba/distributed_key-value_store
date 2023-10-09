@@ -241,10 +241,10 @@ public class DataNode extends AbstractActor {
      * A message that set a timeout for the datanode during a write operation.
      * It is sent by the coordinator and received by the coordinator.
      */
-    public static class TimeoutOnWrite implements Serializable {
+    public static class TimeoutOnUpdate implements Serializable {
         public final String requestId;
 
-        public TimeoutOnWrite(String requestId) {
+        public TimeoutOnUpdate(String requestId) {
             this.requestId = requestId;
         }
     }
@@ -486,6 +486,13 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    public static class TimeoutSendVersion implements Serializable {
+        public Integer key;
+        public TimeoutSendVersion(Integer key) {
+            this.key = key;
+        }
+    }
+
     /* ------- HANDLERS ------- */
 
     /**
@@ -629,6 +636,13 @@ public class DataNode extends AbstractActor {
             node.tell(request, self());
         }
 
+        getContext().system().scheduler().scheduleOnce(
+                Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
+                getSelf(),
+                new TimeoutOnUpdate(msg.requestId),
+                getContext().system().dispatcher(), getSelf()
+        );
+
         // logging
         Logs.ask_update(msg.key, msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
     }
@@ -640,8 +654,16 @@ public class DataNode extends AbstractActor {
      * @param msg AskVersion message
      */
     public void onAskVersion(AskVersion msg) {
-        Data readedData = nodeData.getData(msg.key);
+        Data readedData = nodeData.getDataAndBlock(msg.key);
+        if (readedData == null) { return; } // data is not present
         getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
+
+        getContext().system().scheduler().scheduleOnce(
+                Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
+                getSelf(),
+                new TimeoutSendVersion(readedData.getVersion()),
+                getContext().system().dispatcher(), getSelf()
+        );
 
         // logging
         Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
@@ -690,7 +712,7 @@ public class DataNode extends AbstractActor {
      * If it is, the write operation is aborted.
      * @param msg TimeoutOnWrite message
      */
-    public void onTimeoutOnWrite(TimeoutOnWrite msg) {
+    public void onTimeoutOnUpdate(TimeoutOnUpdate msg) {
         if (requestManager.isTimeoutOnWrite(msg.requestId)) {
             ActorRef client = requestManager.getClientWriteReq(msg.requestId);
             requestManager.removeWriteReq(msg.requestId);
@@ -704,7 +726,7 @@ public class DataNode extends AbstractActor {
      * @param msg UpdateData message
      */
     public void onUpdateData(UpdateData msg) {
-        nodeData.putUpdate(msg.key, msg.value, msg.version);
+        nodeData.putUpdateAndRemoveBlock(msg.key, msg.value, msg.version);
         DataManager.Data elem = nodeData.getData(msg.key);
 
         // logging
@@ -1032,6 +1054,10 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    public void onTimeoutSendVersion(TimeoutSendVersion msg) {
+        nodeData.removeBlock(msg.key);
+    }
+
     // __________________________________________________________________________
     // END DEBUG CLASSES AND FUNCTIONS
 
@@ -1048,7 +1074,7 @@ public class DataNode extends AbstractActor {
                 .match(AskUpdateData.class, this::onAskUpdateData)
                 .match(AskVersion.class, this::onAskVersion)
                 .match(SendVersion.class, this::onSendVersion)
-                .match(TimeoutOnWrite.class, this::onTimeoutOnWrite)
+                .match(TimeoutOnUpdate.class, this::onTimeoutOnUpdate)
                 .match(UpdateData.class, this::onUpdateData)
                 .match(AskToJoin.class, this::onAskToJoin)
                 .match(AskNodeGroup.class, this::onAskNodeGroup)
@@ -1064,6 +1090,7 @@ public class DataNode extends AbstractActor {
                 .match(AskCrash.class, this::onAskCrash)
                 .match(AskGroupToRecover.class, this::onAskGroupToRecover)
                 .match(AskDataToRecover.class, this::onAskDataToRecover)
+                .match(TimeoutSendVersion.class, this::onTimeoutSendVersion)
                 .match(AskStatus.class, this::onAskStatus) // DEBUG
                 .match(PrintStatus.class, this::onPrintStatus) // DEBUG
                 .build();
