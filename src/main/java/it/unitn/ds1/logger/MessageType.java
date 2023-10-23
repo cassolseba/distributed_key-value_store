@@ -22,6 +22,7 @@ public enum MessageType {
     GROUP_REPLY,
     ITEMS_REPLY,
     DATA_REPLY,
+    READ_RESULT,
     CLIENT_READ,
     CLIENT_WRITE,
     CLIENT_UPDATE,
@@ -31,6 +32,8 @@ public enum MessageType {
     READ_TIMEOUT,
     WRITE_TIMEOUT,
     STATUS,
+    UNKNOWN_KEY_ERROR,
+    EXISTING_KEY_ERROR,
     ;
 
     @Override
@@ -99,6 +102,9 @@ public enum MessageType {
             case DATA_REPLY -> {
                 return "DATA_REPLY";
             }
+            case READ_RESULT -> {
+                return "READ_RESULT";
+            }
             case CLIENT_READ -> {
                 return "CLIENT_READ";
             }
@@ -125,6 +131,12 @@ public enum MessageType {
             }
             case STATUS -> {
                 return "STATUS";
+            }
+            case UNKNOWN_KEY_ERROR -> {
+                return "UNKNOWN_KEY_ERROR";
+            }
+            case EXISTING_KEY_ERROR -> {
+                return "EXISTING_KEY_ERROR";
             }
             default -> {
                 return "";

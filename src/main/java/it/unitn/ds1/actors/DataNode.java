@@ -1,6 +1,7 @@
 package it.unitn.ds1.actors;
 
 import akka.actor.*;
+import it.unitn.ds1.logger.ErrorType;
 import it.unitn.ds1.managers.DataManager;
 import it.unitn.ds1.managers.GroupManager;
 import it.unitn.ds1.managers.GroupManager.DataNodeRef;
@@ -51,7 +52,6 @@ public class DataNode extends AbstractActor {
      * Make the data node crash.
      */
     private void crash() {
-        System.out.println("DataNode " + Helper.getName(self()) + " crashed");
         getContext().become(crashed());
     }
 
@@ -59,7 +59,6 @@ public class DataNode extends AbstractActor {
      * Make the data node recover.
      */
     private void recover() {
-        System.out.println("DataNode " + Helper.getName(self()) + " recovered");
         getContext().become(createReceive());
     }
 
@@ -535,12 +534,16 @@ public class DataNode extends AbstractActor {
      * @see Data
      */
     public void onWriteData(WriteData msg) {
-        nodeData.put(msg.key, msg.value);
-        DataManager.Data elem = nodeData.getData(msg.key);
-        //System.out.println("DataNode " + Helper.getName(self()) + ": data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
+        if (!nodeData.isPresent(msg.key)) {
+            nodeData.put(msg.key, msg.value);
+            DataManager.Data elem = nodeData.getData(msg.key);
 
-        // logging
-        Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
+            // logging
+            Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
+        } else {
+            // TODO handle existing key error
+            Logs.error(ErrorType.EXISTING_KEY, msg.key, Helper.getName(self()));
+        }
     }
 
     /**
@@ -580,7 +583,10 @@ public class DataNode extends AbstractActor {
      */
     public void onReadData(ReadData msg) {
         Data readedData = nodeData.getData(msg.key);
-        if (readedData == null) { return; }
+        if (readedData == null) { 
+          Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(sender()));
+          return; 
+        }
         getSender().tell(new SendRead(readedData, msg.requestId), self());
 
         // logging
@@ -656,7 +662,10 @@ public class DataNode extends AbstractActor {
      */
     public void onAskVersion(AskVersion msg) {
         Data readedData = nodeData.getDataAndBlock(msg.key);
-        if (readedData == null) { return; } // data is not present
+        if (readedData == null) { 
+          Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(self()));
+          return; 
+        } // data is not present
         getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
 
         getContext().system().scheduler().scheduleOnce(

@@ -1,6 +1,7 @@
 package it.unitn.ds1.logger;
 
 import it.unitn.ds1.managers.DataManager;
+import org.w3c.dom.Node;
 
 import java.util.Map;
 
@@ -8,6 +9,7 @@ public class Logs {
     private final static long START_TIME = System.currentTimeMillis();
     public final static String FROM_NODE = " | from %s: %s";
     public final static String TO_NODE = " | to %s: %s";
+    public final static String IN_NODE = " | in %s: %s";
     private final static String LOG = "%s: %s | %s |";
     private final static String HEADER = "MESSAGE : TIME | CONTENT | FROM | TO";
     private final static String WRITE_FORMAT = "key: %d, value: %s";
@@ -20,7 +22,6 @@ public class Logs {
     private final static String KEY_FORMAT = "key: %d";
     private final static String NODE_FORMAT = "node: %s";
     private final static String TIMEOUT_FORMAT = "request id: %s";
-
     private final static String STATUS = "key: %d, value: %s, version: %d";
 
     /**
@@ -120,7 +121,7 @@ public class Logs {
         String msg = String.format(RESULT_FORMAT, value, request_id) +
                 String.format(FROM_NODE, NodeType.DATA_NODE, node) +
                 String.format(TO_NODE, NodeType.CLIENT, client);
-        printLog(MessageType.READ_REPLY, msg);
+        printLog(MessageType.READ_RESULT, msg);
     }
 
     public static void ask_update(int key, String value, String request_id, String client, String coordinator) {
@@ -264,6 +265,22 @@ public class Logs {
                         String.format(FROM_NODE, NodeType.DATA_NODE, sender) +
                         String.format(TO_NODE, NodeType.CLIENT, receiver);
                 printLog(MessageType.WRITE_TIMEOUT, msg);
+            }
+            default -> {}
+        }
+    }
+
+    public static void error(ErrorType type, int key, String sender) {
+        switch (type) {
+            case UNKNOWN_KEY -> {
+                String msg = String.format(KEY_FORMAT, key) +
+                        String.format(IN_NODE, NodeType.DATA_NODE, sender);
+                printLog(MessageType.UNKNOWN_KEY_ERROR, msg);
+            }
+            case EXISTING_KEY -> {
+                String msg = String.format(KEY_FORMAT, key) +
+                        String.format(IN_NODE, NodeType.DATA_NODE, sender);
+                printLog(MessageType.EXISTING_KEY_ERROR, msg);
             }
             default -> {}
         }

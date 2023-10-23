@@ -55,6 +55,16 @@ public class DistributedKeyValueStore {
         this.dataNodes.add(new DataNodeRef(40, dataNode4));
         ActorRef dataNode5 = createDataNode("DATA5", 50, W, R, N, T);
         this.dataNodes.add(new DataNodeRef(50, dataNode5));
+        ActorRef dataNode6 = createDataNode("DATA6", 60, W, R, N, T);
+        this.dataNodes.add(new DataNodeRef(60, dataNode6));
+        ActorRef dataNode7 = createDataNode("DATA7", 70, W, R, N, T);
+        this.dataNodes.add(new DataNodeRef(70, dataNode7));
+        ActorRef dataNode8 = createDataNode("DATA8", 80, W, R, N, T);
+        this.dataNodes.add(new DataNodeRef(80, dataNode8));
+        ActorRef dataNode9 = createDataNode("DATA9", 90, W, R, N, T);
+        this.dataNodes.add(new DataNodeRef(90, dataNode9));
+        ActorRef dataNode10 = createDataNode("DATA10", 100, W, R, N, T);
+        this.dataNodes.add(new DataNodeRef(100, dataNode10));
 
         // Manually add some clients
         ActorRef client1 = createClientNode("CLIENT1");
