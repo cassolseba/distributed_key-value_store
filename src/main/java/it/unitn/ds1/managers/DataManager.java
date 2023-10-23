@@ -157,7 +157,7 @@ public class DataManager {
     }
 
     public Data getData(Integer key) {
-        if (blocks.get(key) == true) {
+        if (blocks.get(key)) {
             return null;
         }
         return storage.get(key);
@@ -177,7 +177,7 @@ public class DataManager {
      * @return the value of the data item
      */
     public String getValue(Integer key) {
-        if (blocks.get(key) == true) {
+        if (blocks.get(key)) {
             return null;
         }
         return storage.get(key).getValue();

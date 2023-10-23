@@ -12,8 +12,6 @@ package it.unitn.ds1;
 import akka.actor.ActorRef;
 import it.unitn.ds1.database.DistributedKeyValueStore;
 
-import java.io.IOException;
-
 public class Main {
 
     private static final int N = 5;
@@ -66,8 +64,7 @@ public class Main {
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
         // test 2: read form an unknown key
-        // TODO handle read from unknown key
-        database.sendReadFromClient(firstClient, firstDataNode, 21);
+//        database.sendReadFromClient(firstClient, firstDataNode, 21);
 
         // test 3: read a key twice from the same client and the same coordinator
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
@@ -91,7 +88,6 @@ public class Main {
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 
         // test 2: update an unknown key
-        // TODO handle update from unknown key
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 21, "TWENTY-ONE");
 
         // test 3: read a key, then write a new value and read again
