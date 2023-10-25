@@ -582,7 +582,7 @@ public class DataNode extends AbstractActor {
      * @see Data
      */
     public void onReadData(ReadData msg) {
-        if (nodeData.isPresent(msg.key)) {
+        if (nodeData.isBlocked(msg.key)) {
             Data readedData = nodeData.getData(msg.key);
             getSender().tell(new SendRead(readedData, msg.requestId), self());
 
@@ -662,7 +662,7 @@ public class DataNode extends AbstractActor {
      * @param msg AskVersion message
      */
     public void onAskVersion(AskVersion msg) {
-        if (nodeData.isPresent(msg.key)) {
+        if (nodeData.isBlocked(msg.key)) {
             Data readedData = nodeData.getDataAndBlock(msg.key);
             getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
 
