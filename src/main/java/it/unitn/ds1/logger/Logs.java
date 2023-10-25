@@ -23,11 +23,56 @@ public class Logs {
     private final static String NODE_FORMAT = "node: %s";
     private final static String TIMEOUT_FORMAT = "request id: %s";
     private final static String STATUS = "key: %d, value: %s, version: %d";
+    private final static String TEST = "Running test %d: %s";
 
     /**
      * Print a simple header for logs.
      */
     public static void printHeader() { System.out.println(HEADER); }
+
+    /**
+     *
+     */
+    public static void printStartupInfo(int N, int W, int R, int dataNodeCount, int clientCount) {
+        String init = String.format("Initializing: database with %d datanode and %d client\n",
+                dataNodeCount,
+                clientCount);
+        String info = String.format("Replicas: %d, write quorum: %d, read quorum: %d", N, W, R);
+        System.out.println(init + info);
+    }
+
+    /**
+     *
+     */
+    public static void printClientInit() { System.out.println("Getting client references..."); }
+
+    /**
+     *
+     */
+    public static void printDatanodeInit() { System.out.println("Getting data nodes references..."); }
+
+    /**
+     *
+     */
+    public static void printDataInit() { System.out.println("Writing data into data nodes..."); }
+
+    /**
+     *
+     */
+    public static void printStartStatusCheck() { System.out.println("Launching status check..."); }
+
+    /**
+     *
+     */
+    public static void printEndStatusCheck() { System.out.println("End status check..."); }
+
+    /**
+     *
+     */
+    public static void printRunTest(int n, String test) {
+        String log = String.format(TEST, n, test);
+        System.out.println(log);
+    }
 
     /**
      * Compose the entire log message.

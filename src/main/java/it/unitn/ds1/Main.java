@@ -11,28 +11,33 @@ package it.unitn.ds1;
 
 import akka.actor.ActorRef;
 import it.unitn.ds1.database.DistributedKeyValueStore;
+import it.unitn.ds1.logger.Logs;
 
 public class Main {
 
-    private static final int N = 5;
-    private static final int W = 4;
-    private static final int R = 4;
-    private static final int T = 1000;
-    private static final int dataNodeCount = 5;
-    private static final int dataCount = 10;
-    private static final int clientCount = 3;
+    private static final int N = 5; // number of replicas
+    private static final int W = 4; // write quorum
+    private static final int R = 4; // read quorum
+    private static final int T = 1000; // timeout in millis
+    private static final int dataNodeCount = 5; // number of data node in the system
+    private static final int dataCount = 10; // number of data entry to write in the database
+    private static final int clientCount = 3; // number of client connected to the database
 
     public static void main(String[] args) throws InterruptedException {
+
         /* Instantiate a new distributed key-value store */
+        Logs.printStartupInfo(N, W, R, dataNodeCount, clientCount);
         DistributedKeyValueStore database = new DistributedKeyValueStore(
                 "DKVSystem", N, W, R, dataNodeCount, clientCount);
 
         /* Get references to the clients */
+        Logs.printClientInit();
         ActorRef firstClient = database.getClient(0);
         ActorRef secondClient = database.getClient(1);
         ActorRef thirdClient = database.getClient(2);
 
         /* Get references to the data nodes */
+        Logs.printDatanodeInit();
         ActorRef firstDataNode = database.getDataNode(0); // key: 10
         ActorRef secondDataNode = database.getDataNode(1); // key: 20
         ActorRef thirdDataNode = database.getDataNode(2); // key: 30
@@ -44,6 +49,7 @@ public class Main {
 
         /* Insert some data in the distributed database */
         // TODO initial data items should be inserted using the update method
+        Logs.printDataInit();
         database.sendWriteFromClient(firstClient, firstDataNode, 5, "FIVE");
         database.sendWriteFromClient(firstClient, firstDataNode, 17, "SEVENTEEN");
         database.sendWriteFromClient(firstClient, firstDataNode, 29, "TWENTY-NINE");
@@ -52,7 +58,9 @@ public class Main {
         /* Wait for the writes to be completed */
         Thread.sleep(2500);
 
+        Logs.printStartStatusCheck();
         database.statusMessage(firstClient);
+        Logs.printEndStatusCheck();
 
         Thread.sleep(2500);
 
@@ -61,12 +69,15 @@ public class Main {
         /* ---- READ ---- */
 
         // test 1: read from a key
+//        Logs.printRunTest(1, "read from a key");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
-        // test 2: read form an unknown key
+        // test 2: read from an unknown key
+//        Logs.printRunTest(2, "read from an unknown key");
 //        database.sendReadFromClient(firstClient, firstDataNode, 21);
 
         // test 3: read a key twice from the same client and the same coordinator
+//        Logs.printRunTest(3, "read a key twice from the same client and the same coordinator");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
@@ -102,10 +113,12 @@ public class Main {
 //        database.sendUpdateFromClient(secondClient, secondDataNode, 17, "SE-VEN-TEEN");
 
         // test 5: update two times from the same client and different coordinators
-//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
-//        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
+        Logs.printRunTest(5, "update two times from the same client and different coordinators");
+        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
 
         // test 6: update two times from the same client and the same coordinator
+//        Logs.printRunTest(6, "update two times from the same client and the same coordinator");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEEEEN");
 
@@ -114,7 +127,10 @@ public class Main {
 //        database.crash(secondDataNode);
 
         Thread.sleep(2000);
+
+        Logs.printStartStatusCheck();
         database.statusMessage(firstClient);
+        Logs.printEndStatusCheck();
 
         Thread.sleep(10000);
         System.exit(0);
