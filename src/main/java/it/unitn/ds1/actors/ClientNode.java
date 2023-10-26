@@ -89,7 +89,7 @@ public class ClientNode extends AbstractActor {
      * @param msg is a ClientRead message
      */
     public void onClientRead(ClientRead msg) {
-        String requestId = self().path() + this.Id.toString();
+        String requestId = self().path() + "/" + this.Id.toString();
         this.Id++;
         AskReadData data = new AskReadData(msg.key, requestId);
         // System.out.println("Client " + self().path() + ",
@@ -116,7 +116,7 @@ public class ClientNode extends AbstractActor {
      * @param msg is a ClientUpdate message
      */
     public void onClientUpdate(ClientUpdate msg) {
-        String requestId = self().path() + this.Id.toString();
+        String requestId = self().path() + "/" + this.Id.toString();
         this.Id++;
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
         // System.out.println("Client " + self().path() + ", create update request["

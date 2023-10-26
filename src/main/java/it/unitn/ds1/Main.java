@@ -102,8 +102,8 @@ public class Main {
 //        database.sendUpdateFromClient(secondClient, secondDataNode, 17, "SE-VEN-TEEN");
 
         // test 5: update two times from the same client and different coordinators
-//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
-//        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
+        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
 
         // test 6: update two times from the same client and the same coordinator
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
