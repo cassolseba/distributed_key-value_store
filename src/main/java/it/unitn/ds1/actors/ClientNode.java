@@ -15,7 +15,7 @@ import it.unitn.ds1.utils.Helper;
  */
 public class ClientNode extends AbstractActor {
     // used to identify a message
-    private final Integer Id = 0;
+    private Integer Id = 0;
 
     public ClientNode() {
         System.out.println("CLIENT: is " + Helper.getName(self()));
@@ -89,7 +89,8 @@ public class ClientNode extends AbstractActor {
      * @param msg is a ClientRead message
      */
     public void onClientRead(ClientRead msg) {
-        String requestId = self().path() + this.Id.toString();
+        String requestId = self().path() + "/" + this.Id.toString();
+        this.Id++;
         AskReadData data = new AskReadData(msg.key, requestId);
         // System.out.println("Client " + self().path() + ",
         // create read request["requestId + "]" + " for key:" + msg.key);
@@ -115,7 +116,8 @@ public class ClientNode extends AbstractActor {
      * @param msg is a ClientUpdate message
      */
     public void onClientUpdate(ClientUpdate msg) {
-        String requestId = self().path() + this.Id.toString();
+        String requestId = self().path() + "/" + this.Id.toString();
+        this.Id++;
         AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
         // System.out.println("Client " + self().path() + ", create update request["
         // + requestId + "]" + " for key:" + msg.key + " with value:" + msg.value);
