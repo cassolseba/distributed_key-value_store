@@ -1052,7 +1052,6 @@ public class DataNode extends AbstractActor {
      * @param msg is an AskStatus message.
      */
     public void onAskStatus(AskStatus msg) {
-        System.out.println("\n---STATUS CHECK STARTING---\n");
         for (ActorRef node : groupManager.getGroupActorRef()) {
             node.tell(new PrintStatus(), getSelf());
         }

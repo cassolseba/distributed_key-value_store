@@ -73,8 +73,6 @@ public class DistributedKeyValueStore {
         this.clients.add(client2);
 
         connectDataNodes();
-
-        Logs.printHeader();
     }
 
     /**
@@ -96,8 +94,6 @@ public class DistributedKeyValueStore {
         this.clients = initClients(clientCount);
 
         connectDataNodes();
-
-        Logs.printHeader();
     }
 
     /**

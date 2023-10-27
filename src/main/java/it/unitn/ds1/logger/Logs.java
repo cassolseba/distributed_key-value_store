@@ -1,7 +1,6 @@
 package it.unitn.ds1.logger;
 
 import it.unitn.ds1.managers.DataManager;
-import org.w3c.dom.Node;
 
 import java.util.Map;
 
@@ -23,11 +22,56 @@ public class Logs {
     private final static String NODE_FORMAT = "node: %s";
     private final static String TIMEOUT_FORMAT = "request id: %s";
     private final static String STATUS = "key: %d, value: %s, version: %d";
+    private final static String TEST = "Running test %d: %s";
 
     /**
      * Print a simple header for logs.
      */
     public static void printHeader() { System.out.println(HEADER); }
+
+    /**
+     *
+     */
+    public static void printStartupInfo(int N, int W, int R, int dataNodeCount, int clientCount) {
+        String init = String.format("Initializing: database with %d datanode and %d client\n",
+                dataNodeCount,
+                clientCount);
+        String info = String.format("Replicas: %d, write quorum: %d, read quorum: %d\n", N, W, R);
+        System.out.println(init + info);
+    }
+
+    /**
+     *
+     */
+    public static void printClientInit() { System.out.println("\nGetting client references...\n"); }
+
+    /**
+     *
+     */
+    public static void printDatanodeInit() { System.out.println("Getting data nodes references...\n"); }
+
+    /**
+     *
+     */
+    public static void printDataInit() { System.out.println("Writing data into data nodes...\n"); }
+
+    /**
+     *
+     */
+    public static void printStartStatusCheck() { System.out.println("\nLaunching status check...\n"); }
+
+    /**
+     *
+     */
+    public static void printEndStatusCheck() { System.out.println("\nEnd status check...\n"); }
+
+    /**
+     *
+     */
+    public static void printRunTest(int n, String test) {
+        String log = String.format(TEST, n, test);
+        System.out.println(log);
+    }
 
     /**
      * Compose the entire log message.
@@ -271,17 +315,13 @@ public class Logs {
     }
 
     public static void error(ErrorType type, int key, String sender) {
+        final String msg = String.format(KEY_FORMAT, key) +
+                String.format(IN_NODE, NodeType.DATA_NODE, sender);
+
         switch (type) {
-            case UNKNOWN_KEY -> {
-                String msg = String.format(KEY_FORMAT, key) +
-                        String.format(IN_NODE, NodeType.DATA_NODE, sender);
-                printLog(MessageType.UNKNOWN_KEY_ERROR, msg);
-            }
-            case EXISTING_KEY -> {
-                String msg = String.format(KEY_FORMAT, key) +
-                        String.format(IN_NODE, NodeType.DATA_NODE, sender);
-                printLog(MessageType.EXISTING_KEY_ERROR, msg);
-            }
+            case LOCKED_KEY -> printLog(MessageType.LOCKED_KEY_ERROR, msg);
+            case UNKNOWN_KEY -> printLog(MessageType.UNKNOWN_KEY_ERROR, msg);
+            case EXISTING_KEY -> printLog(MessageType.EXISTING_KEY_ERROR, msg);
             default -> {}
         }
     }
@@ -292,7 +332,7 @@ public class Logs {
      * @param key is the key in the stored pair
      * @param value is the value in the stored pair
      * @param version is the version of the stored pair
-     * @param node is the data node that is storing the pair
+     * @param node is the data node storing pair
      */
     public static void status(int key, String value, int version, String node) {
         String msg = String.format(STATUS, key, value, version) +
