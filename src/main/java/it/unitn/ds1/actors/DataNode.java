@@ -589,6 +589,9 @@ public class DataNode extends AbstractActor {
 
                 // logging
                 Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            } else {
+                // data is locked
+                Logs.error(ErrorType.LOCKED_KEY, msg.key, Helper.getName(sender()));
             }
         } else {
             // data is not present
@@ -678,6 +681,9 @@ public class DataNode extends AbstractActor {
 
                 // logging
                 Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            } else {
+                // data is locked
+                Logs.error(ErrorType.LOCKED_KEY, msg.key, Helper.getName(self()));
             }
         } else {
             // data is not present
