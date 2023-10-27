@@ -24,6 +24,7 @@ public class Logs {
     private final static String TIMEOUT_FORMAT = "request id: %s";
     private final static String STATUS = "key: %d, value: %s, version: %d";
     private final static String TEST = "Running test %d: %s";
+    private final static String dashes = "-".repeat(10);
 
     /**
      * Print a simple header for logs.

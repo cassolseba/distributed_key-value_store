@@ -13,6 +13,8 @@ import akka.actor.ActorRef;
 import it.unitn.ds1.database.DistributedKeyValueStore;
 import it.unitn.ds1.logger.Logs;
 
+import java.io.IOException;
+
 public class Main {
 
     private static final int N = 5; // number of replicas
@@ -60,9 +62,9 @@ public class Main {
 
         Logs.printStartStatusCheck();
         database.statusMessage(firstClient);
-        Logs.printEndStatusCheck();
 
-        Thread.sleep(2500);
+        inputContinue();
+        Logs.printEndStatusCheck();
 
         /* ----- TESTS ----- */
 
@@ -82,26 +84,32 @@ public class Main {
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
         // test 4: read a key from two different clients and two different coordinators
+//        Logs.printRunTest(4, "read a key from two different clients and two different coordinators");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(secondClient, secondDataNode, 17);
 
         // test 5: read a key from two different clients and the same coordinator
+//        Logs.printRunTest(5, "read a key from two different clients and the same coordinator");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendReadFromClient(secondClient, firstDataNode, 17);
 
         // test 6: read a key and make an interested node crash
+//        Logs.printRunTest(6, "read a key and make an interested node crash");
 //        database.sendReadFromClient(firstClient, firstDataNode, 43);
 //        database.crash(fourthDataNode);
 
         /* ---- UPDATE ---- */
 
         // test 1: update a value in the database
+//        Logs.printRunTest(1, "update a value in the database");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 
         // test 2: update an unknown key
+//        Logs.printRunTest(2, "update an unknown key");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 21, "TWENTY-ONE");
 
         // test 3: read a key, then write a new value and read again
+//        Logs.printRunTest(3, "read a key, then write a new value and read again");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        Thread.sleep(1500);
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
@@ -109,6 +117,7 @@ public class Main {
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 
         // test 4: read a key and write at the same key at the same time
+//        Logs.printRunTest(4, "read a key and write at the same key at the same time");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
 //        database.sendUpdateFromClient(secondClient, secondDataNode, 17, "SE-VEN-TEEN");
 
@@ -123,17 +132,26 @@ public class Main {
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEEEEN");
 
         // test 7: update a key and make an interested node crash
+//        Logs.printRunTest(6, "update a key and make an interested node crash");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 //        database.crash(secondDataNode);
 
-        Thread.sleep(2000);
+        inputContinue();
 
         Logs.printStartStatusCheck();
         database.statusMessage(firstClient);
-        Logs.printEndStatusCheck();
 
-        Thread.sleep(10000);
+        inputContinue();
         System.exit(0);
+
+
+    }
+
+    public static void inputContinue() {
+        try {
+            System.out.println("-- ENTER to continue --");
+            System.in.read();
+        } catch (IOException ignored) {}
     }
 
     /*
