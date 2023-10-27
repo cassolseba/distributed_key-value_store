@@ -89,6 +89,14 @@ public class DistributedKeyValueStore {
         this.W = W;
         this.R = R;
 
+        if (W > N || R > N) {
+            System.out.println("ERROR: W or R are greater than N");
+            System.exit(0);
+        } else if (N > dataNodeCount) {
+            System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        }
+
         this.actorSystem = ActorSystem.create(systemName);
         this.dataNodes = initDataNodes(dataNodeCount);
         this.clients = initClients(clientCount);
