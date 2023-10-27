@@ -157,9 +157,9 @@ public class DataManager {
     }
 
     public Data getData(Integer key) {
-        if (blocks.get(key)) {
-            return null;
-        }
+//        if (blocks.get(key)) {
+//            return null;
+//        }
         return storage.get(key);
     }
 
