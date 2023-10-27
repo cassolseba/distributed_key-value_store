@@ -17,13 +17,13 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 5; // number of replicas
-    private static final int W = 4; // write quorum
-    private static final int R = 4; // read quorum
-    private static final int T = 1000; // timeout in millis
-    private static final int dataNodeCount = 5; // number of data node in the system
-    private static final int dataCount = 10; // number of data entry to write in the database
-    private static final int clientCount = 3; // number of client connected to the database
+    private static final int N = 15;
+    private static final int W = 8;
+    private static final int R = 7;
+    private static final int T = 1000;
+    private static final int dataNodeCount = 20;
+    private static final int dataCount = 10;
+    private static final int clientCount = 3;
 
     public static void main(String[] args) throws InterruptedException {
 

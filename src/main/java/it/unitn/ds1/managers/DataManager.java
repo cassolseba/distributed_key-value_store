@@ -204,4 +204,8 @@ public class DataManager {
     public Boolean isPresent(Integer key) {
         return storage.containsKey(key);
     }
+
+    public Boolean isBlocked(Integer key) {
+        return blocks.get(key);
+    }
 }
