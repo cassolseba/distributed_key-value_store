@@ -582,12 +582,14 @@ public class DataNode extends AbstractActor {
      * @see Data
      */
     public void onReadData(ReadData msg) {
-        if (nodeData.isBlocked(msg.key)) {
-            Data readedData = nodeData.getData(msg.key);
-            getSender().tell(new SendRead(readedData, msg.requestId), self());
+        if (nodeData.isPresent(msg.key)) {
+            if (!nodeData.isBlocked(msg.key)) {
+                Data readedData = nodeData.getData(msg.key);
+                getSender().tell(new SendRead(readedData, msg.requestId), self());
 
-            // logging
-            Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+                // logging
+                Logs.read(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            }
         } else {
             // data is not present
             Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(sender()));
@@ -662,19 +664,21 @@ public class DataNode extends AbstractActor {
      * @param msg AskVersion message
      */
     public void onAskVersion(AskVersion msg) {
-        if (nodeData.isBlocked(msg.key)) {
-            Data readedData = nodeData.getDataAndBlock(msg.key);
-            getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
+        if (nodeData.isPresent(msg.key)) {
+            if (!nodeData.isBlocked(msg.key)) {
+                Data readedData = nodeData.getDataAndBlock(msg.key);
+                getSender().tell(new SendVersion(readedData.getVersion(), msg.requestId), self());
 
-            getContext().system().scheduler().scheduleOnce(
-                    Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
-                    getSelf(),
-                    new TimeoutSendVersion(readedData.getVersion()),
-                    getContext().system().dispatcher(), getSelf()
-            );
+                getContext().system().scheduler().scheduleOnce(
+                        Duration.create(maxTimeout, TimeUnit.MILLISECONDS),
+                        getSelf(),
+                        new TimeoutSendVersion(readedData.getVersion()),
+                        getContext().system().dispatcher(), getSelf()
+                );
 
-            // logging
-            Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+                // logging
+                Logs.ask_version(msg.key, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
+            }
         } else {
             // data is not present
             Logs.error(ErrorType.UNKNOWN_KEY, msg.key, Helper.getName(self()));

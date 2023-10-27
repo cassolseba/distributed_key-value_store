@@ -205,5 +205,7 @@ public class DataManager {
         return storage.containsKey(key);
     }
 
-    public Boolean isBlocked(Integer key) { return blocks.containsKey(key); }
+    public Boolean isBlocked(Integer key) {
+        return blocks.get(key);
+    }
 }
