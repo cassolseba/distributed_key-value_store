@@ -34,6 +34,7 @@ public enum MessageType {
     STATUS,
     UNKNOWN_KEY_ERROR,
     EXISTING_KEY_ERROR,
+    LOCKED_KEY_ERROR,
     ;
 
     @Override
@@ -137,6 +138,9 @@ public enum MessageType {
             }
             case EXISTING_KEY_ERROR -> {
                 return "EXISTING_KEY_ERROR";
+            }
+            case LOCKED_KEY_ERROR -> {
+                return "LOCKED_KEY_ERROR";
             }
             default -> {
                 return "";

@@ -32,11 +32,15 @@ public class Main {
         DistributedKeyValueStore database = new DistributedKeyValueStore(
                 "DKVSystem", N, W, R, dataNodeCount, clientCount);
 
+        Thread.sleep(1000); // wait for startup
+
         /* Get references to the clients */
         Logs.printClientInit();
         ActorRef firstClient = database.getClient(0);
         ActorRef secondClient = database.getClient(1);
         ActorRef thirdClient = database.getClient(2);
+
+        Thread.sleep(1000); // wait for client references
 
         /* Get references to the data nodes */
         Logs.printDatanodeInit();
@@ -46,8 +50,7 @@ public class Main {
         ActorRef fourthDataNode = database.getDataNode(3); // key: 40
         ActorRef fifthDataNode = database.getDataNode(4); // key: 50
 
-        /* Wait for the system to be ready */
-        Thread.sleep(2500);
+        Thread.sleep(2500); // wait for datanode references
 
         /* Insert some data in the distributed database */
         // TODO initial data items should be inserted using the update method
@@ -57,8 +60,7 @@ public class Main {
         database.sendWriteFromClient(firstClient, firstDataNode, 29, "TWENTY-NINE");
         database.sendWriteFromClient(firstClient, firstDataNode, 43, "FORTY-THREE");
 
-        /* Wait for the writes to be completed */
-        Thread.sleep(2500);
+        Thread.sleep(2500); // wait for the writes to be completed
 
         Logs.printStartStatusCheck();
         database.statusMessage(firstClient);
@@ -122,9 +124,9 @@ public class Main {
 //        database.sendUpdateFromClient(secondClient, secondDataNode, 17, "SE-VEN-TEEN");
 
         // test 5: update two times from the same client and different coordinators
-        Logs.printRunTest(5, "update two times from the same client and different coordinators");
-        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
-        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
+//        Logs.printRunTest(5, "update two times from the same client and different coordinators");
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
+//        database.sendUpdateFromClient(firstClient, secondDataNode, 17, "SE-VEN-TEEEEEN");
 
         // test 6: update two times from the same client and the same coordinator
 //        Logs.printRunTest(6, "update two times from the same client and the same coordinator");
