@@ -17,13 +17,13 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 15;
-    private static final int W = 8;
-    private static final int R = 7;
+    private static final int N = 8;
+    private static final int W = 5;
+    private static final int R = 5;
     private static final int T = 1000;
     private static final int dataNodeCount = 20;
     private static final int dataCount = 10;
-    private static final int clientCount = 3;
+    private static final int clientCount = 4;
 
     public static void main(String[] args) throws InterruptedException {
 
@@ -39,6 +39,7 @@ public class Main {
         ActorRef firstClient = database.getClient(0);
         ActorRef secondClient = database.getClient(1);
         ActorRef thirdClient = database.getClient(2);
+        ActorRef fourthClient = database.getClient(3);
 
         Thread.sleep(1000); // wait for client references
 
@@ -137,6 +138,23 @@ public class Main {
 //        Logs.printRunTest(6, "update a key and make an interested node crash");
 //        database.sendUpdateFromClient(firstClient, firstDataNode, 17, "SE-VEN-TEEN");
 //        database.crash(secondDataNode);
+
+
+        // Sequential consistency test1
+        // what the thirdClient read should be in the same order as what fourthClient read
+        Logs.printRunTest(7, "sequential consistency 1");
+        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "51");
+        inputContinue();
+        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "52");
+
+        inputContinue();
+        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
+        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
+
+        inputContinue();
+        database.sendReadFromClient(fourthClient, firstDataNode, 5);
+        database.sendReadFromClient(fourthClient, firstDataNode, 5);
+
 
         inputContinue();
 
