@@ -17,12 +17,11 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 8;
-    private static final int W = 5;
-    private static final int R = 5;
+    private static final int N = 4;
+    private static final int W = 2;
+    private static final int R = 2;
     private static final int T = 1000;
-    private static final int dataNodeCount = 20;
-    private static final int dataCount = 10;
+    private static final int dataNodeCount = 6;
     private static final int clientCount = 4;
 
     public static void main(String[] args) throws InterruptedException {
@@ -142,24 +141,48 @@ public class Main {
 
         // Sequential consistency test1
         // what the thirdClient read should be in the same order as what fourthClient read
-        Logs.printRunTest(7, "sequential consistency 1");
-        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "51");
-        inputContinue();
-        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "52");
+//        Logs.printRunTest(7, "sequential consistency 1");
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "51");
+//        inputContinue();
+//        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "52");
+//
+//        inputContinue();
+//        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
+//        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
+//
+//        inputContinue();
+//        database.sendReadFromClient(fourthClient, firstDataNode, 5);
+//        database.sendReadFromClient(fourthClient, firstDataNode, 5);
 
-        inputContinue();
-        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
-        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
 
+        // parameter N=2, W=2, R=2, datanodeCount=5
+        // check if data 5 and 43 that exists in datanode1 replicate
+        //Logs.printRunTest(8, "test leave node");
+
+        //database.leave(firstDataNode);
+
+
+        // parameter N=2, W=2, R=2, datanodeCount=5
+        //Logs.printRunTest(9, "test join");
+        //ActorRef dataNodeNew = database.createDataNode("NEW", 5);
+        //database.join(dataNodeNew, firstDataNode);
+
+
+        // parameter N=3, W=2, R=2, datanodeCount=6
+        Logs.printRunTest(10, "test crash and recover");
+        database.crash(firstDataNode);
         inputContinue();
-        database.sendReadFromClient(fourthClient, firstDataNode, 5);
-        database.sendReadFromClient(fourthClient, firstDataNode, 5);
+        database.sendUpdateFromClient(firstClient, secondDataNode, 5, "51");
+        inputContinue();
+        database.statusMessage(secondClient);
+        inputContinue();
+        database.recover(firstDataNode, secondDataNode);
 
 
         inputContinue();
 
         Logs.printStartStatusCheck();
-        database.statusMessage(firstClient);
+        database.statusMessage(secondClient);
 
         inputContinue();
         System.exit(0);

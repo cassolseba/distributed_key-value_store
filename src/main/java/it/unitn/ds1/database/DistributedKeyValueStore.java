@@ -45,25 +45,25 @@ public class DistributedKeyValueStore {
         this.clients = new ArrayList<ActorRef>();
 
         // Manually add some data nodes
-        ActorRef dataNode1 = createDataNode("DATA1", 10, W, R, N, T);
+        ActorRef dataNode1 = createDataNode("DATA1", 10);
         this.dataNodes.add(new DataNodeRef(10, dataNode1));
-        ActorRef dataNode2 = createDataNode("DATA2", 20, W, R, N, T);
+        ActorRef dataNode2 = createDataNode("DATA2", 20);
         this.dataNodes.add(new DataNodeRef(20, dataNode2));
-        ActorRef dataNode3 = createDataNode("DATA3", 30, W, R, N, T);
+        ActorRef dataNode3 = createDataNode("DATA3", 30);
         this.dataNodes.add(new DataNodeRef(30, dataNode3));
-        ActorRef dataNode4 = createDataNode("DATA4", 40, W, R, N, T);
+        ActorRef dataNode4 = createDataNode("DATA4", 40);
         this.dataNodes.add(new DataNodeRef(40, dataNode4));
-        ActorRef dataNode5 = createDataNode("DATA5", 50, W, R, N, T);
+        ActorRef dataNode5 = createDataNode("DATA5", 50);
         this.dataNodes.add(new DataNodeRef(50, dataNode5));
-        ActorRef dataNode6 = createDataNode("DATA6", 60, W, R, N, T);
+        ActorRef dataNode6 = createDataNode("DATA6", 60);
         this.dataNodes.add(new DataNodeRef(60, dataNode6));
-        ActorRef dataNode7 = createDataNode("DATA7", 70, W, R, N, T);
+        ActorRef dataNode7 = createDataNode("DATA7", 70);
         this.dataNodes.add(new DataNodeRef(70, dataNode7));
-        ActorRef dataNode8 = createDataNode("DATA8", 80, W, R, N, T);
+        ActorRef dataNode8 = createDataNode("DATA8", 80);
         this.dataNodes.add(new DataNodeRef(80, dataNode8));
-        ActorRef dataNode9 = createDataNode("DATA9", 90, W, R, N, T);
+        ActorRef dataNode9 = createDataNode("DATA9", 90);
         this.dataNodes.add(new DataNodeRef(90, dataNode9));
-        ActorRef dataNode10 = createDataNode("DATA10", 100, W, R, N, T);
+        ActorRef dataNode10 = createDataNode("DATA10", 100);
         this.dataNodes.add(new DataNodeRef(100, dataNode10));
 
         // Manually add some clients
@@ -114,7 +114,7 @@ public class DistributedKeyValueStore {
 
         int key = 10;
         for (int i = 0; i < dataNodesCount; i++) {
-            ActorRef dataNode = createDataNode("DATA" + (i + 1), key, W, R, N, T);
+            ActorRef dataNode = createDataNode("DATA" + (i + 1), key);
             dataNodes.add(new DataNodeRef(key, dataNode));
             key += 10;
         }
@@ -146,7 +146,7 @@ public class DistributedKeyValueStore {
      * @param T max timeout
      * @return the actor reference of the new data node
      */
-    public ActorRef createDataNode(String name, int key, int W, int R, int N, int T) {
+    public ActorRef createDataNode(String name, int key) {
         return actorSystem.actorOf(DataNode.props(W, R, N, T, key), name);
     }
 
