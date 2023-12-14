@@ -23,7 +23,7 @@ import java.util.*;
 
 /**
  * DataNode
- * Represent a data node in the system.
+ * Actor that represents a data node in the distributed database
  */
 public class DataNode extends AbstractActor {
     private final int maxTimeout; // in ms
@@ -49,21 +49,21 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Make the data node crash.
+     * Make the data node switch context to crash behavior.
      */
     private void crash() {
         getContext().become(crashed());
     }
 
     /**
-     * Make the data node recover.
+     * Make the data node switch to the normal behavior i.e. recovering
      */
     private void recover() {
         getContext().become(createReceive());
     }
 
     /**
-     * Drop the items that are not in the group anymore.
+     * Drop the items that this node is not responsible anymore
      */
     private void dropUselessItems() {
         nodeData.getKeys().removeIf(item -> !groupManager.findDataNodes(item).contains(self()));
@@ -72,6 +72,7 @@ public class DataNode extends AbstractActor {
     /* ------- MESSAGES ------- */
 
     /**
+     * InitializaDataGroup
      * A message that initializes the group of nodes in this node.
      */
     public static class InitializeDataGroup implements Serializable {
@@ -82,14 +83,21 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /* ------- WRITE ------- */
+
     /**
-     * A message that starts the write operation in the data nodes.
+     * AskWriteData
+     * A message that starts the write operation in the database.
      * It is sent by the client and received by the coordinator data node.
      */
     public static class AskWriteData implements Serializable {
         public final Integer key;
         public final String value;
 
+        /**
+         * @param key the key to write
+         * @param value the value to write
+         */
         public AskWriteData(Integer key, String value) {
             this.key = key;
             this.value = value;
@@ -97,6 +105,7 @@ public class DataNode extends AbstractActor {
     }
 
     /**
+     * WriteData
      * A message that tells the datanode to write the data.
      * It is sent by the coordinator and received by the proper datanode.
      */
@@ -104,21 +113,31 @@ public class DataNode extends AbstractActor {
         public final Integer key;
         public final String value;
 
+        /**
+         * @param key the key to write
+         * @param value the value to write
+         */
         public WriteData(Integer key, String value) {
             this.key = key;
             this.value = value;
         }
     }
 
+    /* ------- READ ------- */
+
     /**
-     * A message that starts the read operation in the data nodes.
+     * AskReadData
+     * A message that starts the read operation in the database.
      * It is sent by the client and received by the coordinator data node.
-     * The requestId is used to know who to answer the read operation.
      */
     public static class AskReadData implements Serializable {
         public final Integer key;
         public final String requestId;
 
+        /**
+         * @param key the key to read
+         * @param requestId the request identifier
+         */
         public AskReadData(Integer key, String requestId) {
             this.key = key;
             this.requestId = requestId;
@@ -126,6 +145,7 @@ public class DataNode extends AbstractActor {
     }
 
     /**
+     * ReadData
      * A message that tells the datanode to read the data.
      * It is sent by the coordinator and received by the proper datanode.
      */
@@ -133,6 +153,10 @@ public class DataNode extends AbstractActor {
         public final Integer key;
         public final String requestId;
 
+        /**
+         * @param key the key to read
+         * @param requestId the request identifier
+         */
         public ReadData(Integer key, String requestId) {
             this.key = key;
             this.requestId = requestId;
@@ -140,37 +164,50 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that set a timeout for the datanode during a read operation.
-     * It is sent by the coordinator and received by the coordinator.
+     * TimeoutOnRead
+     * A message that returns a timeout during a read operation.
+     * It is sent by the data node and received by the coordinator.
      */
     public static class TimeoutOnRead implements Serializable {
         public final String requestId;
 
+        /**
+         * @param requestId the request identifier
+         */
         public TimeoutOnRead(String requestId) {
             this.requestId = requestId;
         }
     }
 
     /**
-     * A message that tells the client that a timeout occurred during a certain read operation.
+     * ReturnTimeoutOnRead
+     * A message that tells the client that a timeout occurred during the read operation.
      * It is sent by the coordinator and received by the client.
      */
     public static class ReturnTimeoutOnRead implements Serializable {
         public final String requestId;
 
+        /**
+         * @param requestId the request identifier
+         */
         public ReturnTimeoutOnRead(String requestId) {
             this.requestId = requestId;
         }
     }
 
     /**
-     * A message that tells the result of a certain read operation to the coordinator.
-     * It is sent by the data nodes and received by the coordinator.
+     * SendRead
+     * A message that returns the value of the requested key.
+     * It is sent by the data node and received by the coordinator.
      */
     public static class SendRead implements Serializable {
         public final Data data;
         public final String requestId;
 
+        /**
+         * @param data the requested data
+         * @param requestId the request identifier
+         */
         public SendRead(Data data, String requestId) {
             this.data = data;
             this.requestId = requestId;
@@ -178,29 +215,41 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that tells the result of a certain read operation to the client.
+     * SendRead2Client
+     * A message that forwards the result of the read to the client.
      * It is sent by the coordinator and received by the client.
      */
     public static class SendRead2Client implements Serializable {
         public final String value;
         public final String requestId;
 
+        /**
+         * @param value the value of the requested key
+         * @param requestId the request identifier
+         */
         public SendRead2Client(String value, String requestId) {
             this.value = value;
             this.requestId = requestId;
         }
     }
 
+    /* ------- UPDATE ------- */
+
     /**
-     * A message that starts the update data procedure in the data nodes.
-     * It is sent by the client and received by the coordinator datanode.
-     * The requestId is used to know who to answer the update operation.
+     * AskUpdateData
+     * A message that starts the update operation in the data nodes.
+     * It is sent by the client and received by the coordinator.
      */
     public static class AskUpdateData implements Serializable {
         public final Integer key;
         public final String value;
         public final String requestId;
 
+        /**
+         * @param key the key to update
+         * @param value the new value
+         * @param requestId the request identifier
+         */
         public AskUpdateData(Integer key, String value, String requestId) {
             this.key = key;
             this.value = value;
@@ -209,13 +258,18 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that ask the datanode the version of the specified data.
+     * AskVersion
+     * A message used to ask the datanode the version associated to the key.
      * It is sent by the coordinator and received by the proper datanode.
      */
     public static class AskVersion implements Serializable {
         public final Integer key;
         public final String requestId;
 
+        /**
+         * @param key the key to update
+         * @param requestId the request identifier
+         */
         public AskVersion(Integer key, String requestId) {
             this.key = key;
             this.requestId = requestId;
@@ -223,13 +277,18 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that tells the version of the specified data to the coordinator.
+     * SendVersion
+     * A message used to return the version of the data to update in this node.
      * It is sent by the data nodes and received by the coordinator.
      */
     public static class SendVersion implements Serializable {
         public final Integer version;
         public final String requestId;
 
+        /**
+         * @param version the actual version
+         * @param requestId the request identifier
+         */
         public SendVersion(Integer version, String requestId) {
             this.version = version;
             this.requestId = requestId;
@@ -237,37 +296,50 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that set a timeout for the datanode during a write operation.
-     * It is sent by the coordinator and received by the coordinator.
+     * TimeoutOnUpdate
+     * A message that returns a timeout during an update operation.
+     * It is sent by the data node and received by the coordinator.
      */
     public static class TimeoutOnUpdate implements Serializable {
         public final String requestId;
 
+        /**
+         * @param requestId the request identifier
+         */
         public TimeoutOnUpdate(String requestId) {
             this.requestId = requestId;
         }
     }
 
     /**
-     * A message that tells the client that a timeout occurred during a certain write operation.
+     * ReturnTimeoutOnWrite
+     * A message that tells the client that a timeout occurred during an update operation.
      * It is sent by the coordinator and received by the client.
      */
     public static class ReturnTimeoutOnWrite implements Serializable {
         public final String requestId;
 
+        /**
+         * @param requestId the request identifier
+         */
         public ReturnTimeoutOnWrite(String requestId) {
             this.requestId = requestId;
         }
     }
 
     /**
-     * A message that tells the result of a certain write operation to the coordinator.
+     * ReturnUpdate
+     * A message that tells the result of the update operation to the coordinator.
      * It is sent by the coordinator and received by the client.
      */
     public static class ReturnUpdate implements Serializable {
         public final Integer version;
         public final String requestId;
 
+        /**
+         * @param version the actual version
+         * @param requestId the request identifier
+         */
         public ReturnUpdate(Integer version, String requestId) {
             this.version = version;
             this.requestId = requestId;
@@ -275,7 +347,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that tells the data node to update the specified data.
+     * UpdateData
+     * A message that tells the data node to perform the update.
      * It is sent by the coordinator and received by the proper data node.
      */
     public static class UpdateData implements Serializable {
@@ -283,6 +356,11 @@ public class DataNode extends AbstractActor {
         public final String value;
         public final Integer version;
 
+        /**
+         * @param key the key to update
+         * @param value the new value
+         * @param version the new version
+         */
         public UpdateData(Integer key, String value, Integer version) {
             this.key = key;
             this.value = value;
@@ -290,9 +368,28 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /* ------- JOIN ------- */
+
     /**
-     * A message that requests the group of nodes to the bootstrapping node.
-     * It is sent by the joining data node and received by the bootstrapping node.
+     * AskToJoin
+     * A message that starts the join operation.
+     * It is sent by the system and received by the joining node
+     */
+    public static class AskToJoin implements Serializable {
+        public ActorRef bootstrappingNode;
+
+        /**
+         * @param node the ActorRef of the boostrap node
+         */
+        public AskToJoin(ActorRef node) {
+            this.bootstrappingNode = node;
+        }
+    }
+
+    /**
+     * AskNodeGroup
+     * A message that ask for the actual group of nodes to the boostrap node.
+     * It is sent by the joining data node and received by the boostrap node.
      */
     public static class AskNodeGroup implements Serializable {
         public AskNodeGroup() {
@@ -300,39 +397,25 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that starts the join operation.
-     * It is sent by the joining data node and received by the bootstrapping node.
-     */
-    public static class AskToJoin implements Serializable {
-        public ActorRef bootstrappingNode;
-
-        public AskToJoin(ActorRef node) {
-            this.bootstrappingNode = node;
-        }
-    }
-
-    /**
+     * SendNodeGroup
      * A message that returns the group of nodes to the joining data node.
-     * It is sent by the bootstrapping node and received by the joining data node.
+     * It is sent by the bootstrap node and received by the joining data node.
      */
     public static class SendNodeGroup implements Serializable {
         public final List<DataNodeRef> group;
 
+        /**
+         * @param group the list of ActorRef that form the group
+         */
         public SendNodeGroup(List<DataNodeRef> group) {
             this.group = Collections.unmodifiableList(new ArrayList<>(group));
         }
     }
 
     /**
-     * TODO ??
-     */
-    public static class AskDataToJoin implements Serializable {
-        public AskDataToJoin() {
-        }
-    }
-
-    /**
+     * AskItems
      * A message that requests the set of keys.
+     * It is sent by the joining node and received by its neighbors.
      */
     public static class AskItems implements Serializable {
         public AskItems() {
@@ -340,36 +423,49 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that returns the set of keys.
+     * A message that returns the set of the keys of the node.
+     * It is received by the joining node and sent by one of its neighbors.
      */
     public static class SendItems implements Serializable {
         public final Set<Integer> keys;
 
+        /**
+         * @param keys the set of keys of the neighbor
+         */
         public SendItems(Set<Integer> keys) {
             this.keys = Collections.unmodifiableSet(new HashSet<>(keys));
         }
     }
 
     /**
-     * A message that requests the data associated with the specified key.
-     * It is sent by the joining data node and received by the proper data node.
+     * AskItemData
+     * A message that requests the value of a key.
+     * It is sent by the joining data node and received by the neighbors.
      */
     public static class AskItemData implements Serializable {
         public Integer key;
 
+        /**
+         * @param key the requested key
+         */
         public AskItemData(Integer key) {
             this.key = key;
         }
     }
 
     /**
-     * A message that returns the data associated with the specified key.
-     * It is sent by the proper data node and received by the joining data node.
+     * SendItemData
+     * A message that returns the value of the requested key.
+     * It is sent by one of the neighbors and received by the joining data node.
      */
     public static class SendItemData implements Serializable {
         public Integer key;
         public Data itemData;
 
+        /**
+         * @param key the requested key
+         * @param itemData the requested data
+         */
         public SendItemData(Integer key, Data itemData) {
             this.key = key;
             this.itemData = itemData;
@@ -377,19 +473,27 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that announces the joining of a new data node.
+     * AnnounceJoin
+     * A message that informs the group that the node is entering the group.
      * It is sent by the joining data node and received by the data nodes in the group.
      */
     public static class AnnounceJoin implements Serializable {
         public Integer nodeKey;
 
+        /**
+         * @param nodeKey the node key of the joining node
+         */
         public AnnounceJoin(Integer nodeKey) {
             this.nodeKey = nodeKey;
         }
     }
 
+    /* ------- LEAVE ------- */
+
     /**
-     * A message that requests the leave operation.
+     * AskToLeave
+     * A message that start the leave operation.
+     * It is sent by the system and received by a data node, that will leave.
      */
     public static class AskToLeave implements Serializable {
         public AskToLeave() {
@@ -397,7 +501,9 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that announces the leaving of a data node.
+     * AnnounceLeave
+     * A message that informs the group that the node is leaving the system.
+     * It is sent by the leaving node and received by the group.
      */
     public static class AnnounceLeave implements Serializable {
         public AnnounceLeave() {
@@ -405,39 +511,55 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * TODO ??
+     * NewData
+     * A message that returns the item of the leaving node to the nodes of the group.
+     * It is sent by the leaving node and received by the group.
      */
     public static class NewData implements Serializable {
         public Integer key;
         public Data data;
 
+        /**
+         * @param key the key
+         * @param data the pair value-version
+         */
         public NewData(Integer key, Data data) {
             this.key = key;
             this.data = data;
         }
     }
 
+    /* ------- CRASH ------- */
+
     /**
+     * AskCrash
      * A message that requests the data node to crash.
+     * It is sent by the system and received by a node.
      */
     public static class AskCrash implements Serializable {
-        public AskCrash() {
-        }
+        public AskCrash() {}
     }
 
     /**
+     * AskRecover
      * A message that requests the data node to recover.
+     * It is sent by the system and received by a crashed node.
      */
     public static class AskRecover implements Serializable {
         public ActorRef node;
 
+        /**
+         * @param node the boostrap node
+         */
         public AskRecover(ActorRef node) {
             this.node = node;
         }
     }
 
     /**
-     * A message that requests the group of nodes to recover.
+     * AskGroupToRecover
+     * A message that requests the group of nodes.
+     * It is sent by the crashed node and received by the bootstrap node.
      */
     public static class AskGroupToRecover implements Serializable {
         public AskGroupToRecover() {
@@ -445,48 +567,74 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * A message that returns the group of nodes to recover.
+     * SendGroupToRecover
+     * A message that returns the group of nodes.
+     * It is sent by the boostrap node and received by the crashed node.
      */
     public static class SendGroupToRecover implements Serializable {
         public final List<DataNodeRef> group;
 
+        /**
+         * @param group the ActorRef list of the group
+         */
         public SendGroupToRecover(List<DataNodeRef> group) {
             this.group = Collections.unmodifiableList(new ArrayList<>(group));
         }
     }
 
     /**
-     * A message that requests the data associated with the specified key to recover.
+     * AskDataToRecover
+     * A message that requests the data associated with the key to recover.
+     * It is sent by the crashed node and received by its neighbors.
      */
     public static class AskDataToRecover implements Serializable {
         public Integer crashedNodeId;
 
+        /**
+         * @param nodeId the node id of the crashed node
+         */
         public AskDataToRecover(Integer nodeId) {
             this.crashedNodeId = nodeId;
         }
     }
 
     /**
-     * A message that returns the data associated with the specified key to recover.
+     * SendDataToRecover
+     * A message that returns the data associated with the key to recover.
+     * It is sent by one of the neighbors and received by the crashed node.
      */
     public static class SendDataToRecover implements Serializable {
         public Map<Integer, Data> data;
 
+        /**
+         * @param data the requested data
+         */
         public SendDataToRecover(Map<Integer, Data> data) {
             this.data = Collections.unmodifiableMap(new HashMap<>(data));
         }
     }
 
     /**
-     * TODO ??
+     * TimeoutRecover
+     * A message that returns a timeout during a recover operation.
+     * It is sent by TODO
      */
     public static class TimeoutRecover implements Serializable {
         public TimeoutRecover() {
         }
     }
 
+    /**
+     * TimeoutSendVersion
+     * A message that returns a timeout while waiting for the version
+     * It is sent by TODO
+     */
     public static class TimeoutSendVersion implements Serializable {
         public Integer key;
+
+        /**
+         * @param key the requested key
+         */
         public TimeoutSendVersion(Integer key) {
             this.key = key;
         }
@@ -495,8 +643,8 @@ public class DataNode extends AbstractActor {
     /* ------- HANDLERS ------- */
 
     /**
-     * Handler that set the actual group of nodes in this node.
-     *
+     * InitializeDataGroup handler.
+     * Initialize the group of nodes.
      * @param msg InitializeDataGroup msg
      * @see InitializeDataGroup
      */
@@ -507,13 +655,13 @@ public class DataNode extends AbstractActor {
         Logs.init_group(Helper.getName(self()));
     }
 
+    /* ------- WRITE ------- */
+
     /**
-     * Handler that, on receiving an AskWriteData message,
-     * sends a WriteData message to the nodes that have the specified key.
-     *
+     * AskWriteData handler
+     * Sends a WriteData message to the nodes that holds the key.
      * @param msg AskWriteData message
      * @see AskWriteData
-     * @see WriteData
      */
     public void onAskWriteData(AskWriteData msg) {
         for (ActorRef node : groupManager.findDataNodes(msg.key)) {
@@ -526,12 +674,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a WriteData message,
-     * writes the pair {key, value} in this nodeData
-     *
+     * WriteData handler.
+     * Performs the write operation.
      * @param msg WriteData message
      * @see WriteData
-     * @see Data
      */
     public void onWriteData(WriteData msg) {
         if (!nodeData.isPresent(msg.key)) {
@@ -546,13 +692,14 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /* ------- READ ------- */
+
     /**
-     * Handler that, on receiving an AskReadData message,
-     * sends a ReadData message to the nodes that have the specified key.
-     *
+     * AskReadData handler
+     * Sends a read request to the node that holds the key.
+     * Schedule the timeout message.
      * @param msg AskReadData message
      * @see AskReadData
-     * @see ReadData
      */
     public void onAskReadData(AskReadData msg) {
         requestManager.newReadReq(msg.requestId, getSender());
@@ -574,12 +721,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a ReadData message,
-     * gets the value from this nodeData associated with the provided key.
-     *
-     * @param msg WriteData message
+     * ReadData handler
+     * Gets the value associated with the key.
+     * @param msg ReadData message
      * @see ReadData
-     * @see Data
      */
     public void onReadData(ReadData msg) {
         if (nodeData.isPresent(msg.key)) {
@@ -600,11 +745,12 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendRead message,
-     * adds the data to the read quorum.
+     * SendRead handler.
+     * Adds the data to the read quorum.
      * If the quorum is reached, the data is sent to the client.
      * If the quorum is not reached, nothing happens.
      * @param msg SendRead message
+     * @see SendRead
      */
     public void onSendRead(SendRead msg) {
         switch (requestManager.addReadResp(msg.requestId, msg.data)) {
@@ -624,10 +770,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a TimeoutOnRead message,
-     * checks if the timeout is still valid.
-     * If it is, the read operation is aborted.
+     * TimeoutOnRead handler
+     * Forward timeout message to the client.
      * @param msg TimeoutOnRead message
+     * @see TimeoutOnRead
      */
     public void onTimeoutOnRead(TimeoutOnRead msg) {
         if (requestManager.isTimeoutOnRead(msg.requestId)) {
@@ -637,10 +783,13 @@ public class DataNode extends AbstractActor {
         }
     }
 
+    /* ------- UPDATE ------- */
+
     /**
-     * Handler that, on receiving a onAskUpdateData message,
-     * sends a AskVersion message to the nodes that have the specified key.
+     * AskUpdateData handler.
+     * Send an update request to the node that holds the key.
      * @param msg AskUpdateData message
+     * @see AskUpdateData
      */
     public void onAskUpdateData(AskUpdateData msg) {
         requestManager.newWriteReq(msg.requestId, getSender(), msg.key, msg.value);
@@ -661,10 +810,11 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AskVersion message,
-     * gets the version from this nodeData associated with the provided key
-     * and send back.
+     * AskVersion handler.
+     * Sends back the version of the requested item if it is not locked.
+     * Schedule a timeout message
      * @param msg AskVersion message
+     * @see AskVersion
      */
     public void onAskVersion(AskVersion msg) {
         if (nodeData.isPresent(msg.key)) {
@@ -692,10 +842,11 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendVersion message,
-     * adds the version to the write quorum.
-     * If the quorum is reached, the data is sent to the client.
+     * SendVersion handler.
+     * If the quorum is reached, send the update message with the new value and version.
+     * Return to the client the new version of the item.
      * @param msg SendVersion message
+     * @see SendVersion
      */
     public void onSendVersion(SendVersion msg) {
         switch (requestManager.addWriteResp(msg.requestId, msg.version)) {
@@ -729,10 +880,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a TimeoutOnWrite message,
-     * checks if the timeout is still valid.
-     * If it is, the write operation is aborted.
-     * @param msg TimeoutOnWrite message
+     * TimeoutOnUpdate handler.
+     * Forward timeout message to the client.
+     * @param msg TimeoutOnUpdate message
+     * @see TimeoutOnUpdate
      */
     public void onTimeoutOnUpdate(TimeoutOnUpdate msg) {
         if (requestManager.isTimeoutOnWrite(msg.requestId)) {
@@ -743,9 +894,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an UpdateData message,
-     * updates the data associated with the provided key.
+     * UpdateData handler.
+     * Performs the update and removes the lock on the resource.
      * @param msg UpdateData message
+     * @see UpdateData
      */
     public void onUpdateData(UpdateData msg) {
         nodeData.putUpdateAndRemoveBlock(msg.key, msg.value, msg.version);
@@ -756,19 +908,23 @@ public class DataNode extends AbstractActor {
         // System.out.println("DataNode " + Helper.getName(self()) + ": update data {" + msg.key + ",(" + elem.getValue() + "," + elem.getVersion() + ")} saved");
     }
 
+    /* ------- JOIN ------- */
+
     /**
-     * Handler that, on receiving an onAskToJoin message,
-     * sends a AskNodeGroup message to the bootstrapping node.
+     * AskToJoin handler.
+     * Asks the boostrap node the actual group.
      * @param msg AskToJoin message
+     * @see AskToJoin
      */
     public void onAskToJoin(AskToJoin msg) {
         msg.bootstrappingNode.tell(new AskNodeGroup(), self());
     }
 
     /**
-     * Handler that, on receiving an AskNodeGroup message,
-     * sends a SendNodeGroup message to the joining data node.
+     * AskNodeGroup handler
+     * Sends back the group.
      * @param msg AskNodeGroup message
+     * @see AskNodeGroup
      */
     public void onAskNodeGroup(AskNodeGroup msg) {
         List<DataNodeRef> group = groupManager.getGroup();
@@ -779,10 +935,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendNodeGroup message,
-     * adds the group of nodes to this node
-     * and sends an AskItems message to the clockwise neighbor.
+     * SendNodeGroup handler.
+     * Find the neighbors and ask for the items.
      * @param msg SendNodeGroup message
+     * @see SendNodeGroup
      */
     public void onSendNodeGroup(SendNodeGroup msg) {
         groupManager.addNode(msg.group);
@@ -794,9 +950,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AskItems message,
-     * sends a SendItems message to the joining data node.
+     * AskItems handler.
+     * Send back the items.
      * @param msg AskItems message
+     * @see AskItems
      */
     public void onAskItems(AskItems msg) {
         Set<Integer> items = nodeData.getKeys();
@@ -807,9 +964,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendItems message,
-     * adds the items to the join manager
-     * and sends an AskItemData message to the data nodes that have the specified key.
+     * SendItems handler.
+     * Upon receiving the items, ask for the related data.
      * @param msg SendItems message
      */
     public void onSendItems(SendItems msg) {
@@ -826,8 +982,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AskItemData message,
-     * sends a SendItemData message to the joining data node.
+     * AskItemData handler.
+     * Send back the data related to the item.
      * @param msg AskItemData message
      */
     public void onAskItemData(AskItemData msg) {
@@ -840,10 +996,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendItemData message,
-     * adds the data to the join manager.
-     * If the join manager has all the data, it sends an AnnounceJoin message to the data nodes in the group.
+     * SendItemData handler.
+     * Store the data in the node and announce the join to the group.
      * @param msg SendItemData message
+     * @see SendItemData
      */
     public void onSendItemData(SendItemData msg) {
         if (joinManager.addData(msg.key, msg.itemData)) {
@@ -865,9 +1021,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AnnounceJoin message,
-     * adds the node to the group.
+     * AnnounceJoin handler.
+     * Add the node to the group.
      * @param msg AnnounceJoin message
+     * @see AnnounceJoin
      */
     public void onAnnounceJoin(AnnounceJoin msg) {
         groupManager.addNode(new DataNodeRef(msg.nodeKey, getSender()));
@@ -879,13 +1036,15 @@ public class DataNode extends AbstractActor {
         Logs.join(msg.nodeKey, Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /* ------- LEAVE ------- */
+
     /**
-     * Handler that, on receiving an AskToLeave message,
-     * sends an AnnounceLeave message to the data nodes in the group.
+     * AskToLeave handler.
+     * Informs the group that the node is leaving and sends its items to the neighbors.
      * @param msg AskToLeave message
+     * @see AskToLeave
      */
     public void onAskToLeave(AskToLeave msg) {
-        System.out.println("DataNode " + Helper.getName(self()) + " leaved");
         // announce to others
         for (ActorRef node : groupManager.getGroupActorRef()) {
             node.tell(new AnnounceLeave(), self());
@@ -904,9 +1063,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AnnounceLeave message,
-     * removes the node from the group.
+     * AnnounceLeave handler.
+     * Remove the node from the group.
      * @param msg AnnounceLeave message
+     * @see AnnounceLeave
      */
     public void onAnnounceLeave(AnnounceLeave msg) {
         // remove the sender
@@ -917,9 +1077,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a NewData message,
-     * adds the data to the nodeData.
+     * NewData handler
+     * Store data and items of the leaving node.
      * @param msg NewData message
+     * @see NewData
      */
     public void onNewData(NewData msg) {
         nodeData.putNewData(msg.key, msg.data);
@@ -928,10 +1089,13 @@ public class DataNode extends AbstractActor {
         // TODO
     }
 
+    /* ------- CRASH ------- */
+
     /**
-     * Handler that, on receiving an AskCrash message,
-     * crashes the node.
+     * AskCrash handler.
+     * Make the node crash.
      * @param msg AskCrash message
+     * @see AskCrash
      */
     public void onAskCrash(AskCrash msg) {
         crash();
@@ -940,9 +1104,11 @@ public class DataNode extends AbstractActor {
         Logs.crash(Helper.getName(getSender()), Helper.getName(self()));
     }
 
+    /* ------- RECOVER ------- */
+
     /**
-     * Handler that, on receiving an AskRecover message,
-     * sends an AskGroupToRecover message to the bootstrapping node.
+     * AskRecover handler.
+     * Asks the bootstrap node the group.
      * @param msg AskRecover message
      */
     public void onAskRecover(AskRecover msg) {
@@ -953,8 +1119,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AskGroupToRecover message,
-     * sends a SendGroupToRecover message to the crashed node.
+     * AskGroupToRecover handler.
+     * Sends back the actual group.
      * @param msg AskGroupToRecover message
      */
     public void onAskGroupToRecover(AskGroupToRecover msg) {
@@ -966,9 +1132,9 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendGroupToRecover message,
-     * adds the group of nodes to this node
-     * and sends an AskDataToRecover message to the data nodes that have the specified key.
+     * SendGroupToRecover handler.
+     * Select the item for which it is responsible and ask for the data.
+     * Schedule a timeout message.
      * @param msg SendGroupToRecover message
      */
     public void onSendGroupToRecover(SendGroupToRecover msg) {
@@ -993,8 +1159,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving an AskDataToRecover message,
-     * sends a SendDataToRecover message to the crashed node.
+     * AskData handler.
+     * Sends back the data of the requested item.
      * @param msg AskDataToRecover message
      */
     public void onAskDataToRecover(AskDataToRecover msg) {
@@ -1009,8 +1175,8 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a TimeoutRecover message,
-     * recovers the node.
+     * TimeoutRecover handler.
+     * Make the node recover.
      * @param msg TimeoutRecover message
      */
     public void onTimeoutRecover(TimeoutRecover msg) {
@@ -1021,8 +1187,18 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Handler that, on receiving a SendDataToRecover message,
-     * adds the data to the nodeData.
+     * TimeoutSendVersion handler.
+     * Remove the lock from the key.
+     * @param msg TimeoutSendVersion message
+     * @see TimeoutSendVersion
+     */
+    public void onTimeoutSendVersion(TimeoutSendVersion msg) {
+        nodeData.removeBlock(msg.key);
+    }
+
+    /**
+     * SendDataToRecover handler.
+     * Store the data.
      * @param msg SendDataToRecover message
      */
     public void onSendDataToRecover(SendDataToRecover msg) {
@@ -1032,12 +1208,12 @@ public class DataNode extends AbstractActor {
         Logs.data_recover(msg.data, Helper.getName(getSender()), Helper.getName(self()));
     }
 
-
-    // DEBUG CLASSES AND FUNCTIONS
-    // __________________________________________________________________________
+    /* ------- DEBUG & TESTING ------- */
 
     /**
-     * Message for requesting a status check of the system. It follows the status request from a client node.
+     * AskStatus
+     * Message for requesting a status check of the system.
+     * It follows the status request from a client node.
      */
     public static class AskStatus {
         AskStatus() {
@@ -1045,7 +1221,9 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Message for printing the actual status. It follows the ask status request.
+     * PrintStatus
+     * Message for printing the actual status.
+     * It follows the ask status request.
      */
     public static class PrintStatus {
         PrintStatus() {
@@ -1053,9 +1231,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Ask status handler.
-     *
-     * @param msg is an AskStatus message.
+     * AskStatus handler.
+     * Tells every node of the group to print its status.
+     * @param msg AskStatus message
+     * @see AskStatus
      */
     public void onAskStatus(AskStatus msg) {
         for (ActorRef node : groupManager.getGroupActorRef()) {
@@ -1064,9 +1243,10 @@ public class DataNode extends AbstractActor {
     }
 
     /**
-     * Print status handler: iterate on the data stored in the node and print the content.
-     *
-     * @param msg is a PrintStatus message.
+     * PrintStatus handler.
+     * Print the content.
+     * @param msg PrintStatus message.
+     * @see PrintStatus
      */
     public void onPrintStatus(PrintStatus msg) {
         for (int i : nodeData.getKeys()) {
@@ -1075,12 +1255,6 @@ public class DataNode extends AbstractActor {
         }
     }
 
-    public void onTimeoutSendVersion(TimeoutSendVersion msg) {
-        nodeData.removeBlock(msg.key);
-    }
-
-    // __________________________________________________________________________
-    // END DEBUG CLASSES AND FUNCTIONS
 
     @Override
     public Receive createReceive() {
