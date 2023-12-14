@@ -29,6 +29,7 @@ public class DistributedKeyValueStore {
     private final List<ActorRef> clients;
 
     /**
+     * DistributedKeyValueStore
      * Constructor with fixed data nodes and clients, useful for testing
      * @param systemName name of the actor system
      * @param N number of replicas
@@ -76,6 +77,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * DistributedKeyValueStore
      * Constructor with variable data nodes and clients, defined in class Main
      * @param systemName name of the actor system
      * @param N number of replicas
@@ -105,6 +107,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initDataNodes
      * Initialize data nodes with keys 10, 20, 30, 40, 50, ... and name DATA1, DATA2, DATA3, ...
      * @param dataNodesCount number of data nodes
      * @return a list of data nodes
@@ -123,6 +126,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initClients
      * Initialize clients with names CLIENT1, CLIENT2, CLIENT3, ...
      * @param clientCount number of clients
      * @return a list of clients
@@ -137,13 +141,10 @@ public class DistributedKeyValueStore {
     }
 
     /**
-     * create a new data node
+     * createDataNode
+     * Create a new data node
      * @param name name of the new data node
      * @param key key of the new data node
-     * @param W write quorum
-     * @param R read quorum
-     * @param N number of replicas
-     * @param T max timeout
      * @return the actor reference of the new data node
      */
     public ActorRef createDataNode(String name, int key) {
@@ -151,8 +152,9 @@ public class DistributedKeyValueStore {
     }
 
     /**
-     * create a new client
-     * @param name name of the new client
+     * createClientNode
+     * Create a new client
+     * @param name the name of the new client
      * @return the actor reference of the new client
      */
     public ActorRef createClientNode(String name) {
@@ -160,6 +162,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * connectDataNodes
      * Send the group of data nodes to all the nodes in the system
      */
     private void connectDataNodes() {
@@ -169,6 +172,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * writeData
      * Write a new key-value pair in the distributed database, useful for testing and initializing the system
      * @param key the new key
      * @param value the new value
@@ -180,6 +184,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initRandomData
      * Write in the database random key-value pairs, useful for testing and initializing the system
      * @param dataCount number of key-value pairs to write
      */
@@ -194,6 +199,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getRandomDataNode
      * Get a random data node from the system
      * @return an actor reference to random data node
      */
@@ -203,8 +209,9 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getRandomClient
      * Get a random client from the system
-     * @return an actor reference to random client
+     * @return an actor reference to a random client
      */
     public ActorRef getRandomClient() {
         Random rand = new Random();
@@ -212,6 +219,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getMaxKey
      * Get the higher node key in the database
      * @return the higher node key
      */
@@ -228,6 +236,7 @@ public class DistributedKeyValueStore {
     // ----- Messages ----- //
 
     /**
+     * sendWriteFromClient
      * Send a Write request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -240,6 +249,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * sendReadFromClient
      * Send a Read request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -251,6 +261,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * sendUpdateFromClient
      * Send an Update request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -263,6 +274,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * join
      * Send a join request to the system
      * @param joiningNode the node that wants to join
      * @param bootstrappingNode the node that helps the joining node
@@ -273,6 +285,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * leave
      * Send a leave request to the system
      * @param leavingNode the node that wants to leave
      */
@@ -282,6 +295,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * crash
      * Tell a node to crash
      * @param crashingNode the node that crashes
      */
@@ -291,6 +305,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * recover
      * Tell a node to recover
      * @param crashedNode the node that crashed
      * @param bootstrappingNode the node that helps the crashed node to recover
@@ -301,6 +316,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * statusMessage
      * Send a status request to the system
      * @param client the client that sends the request
      */
@@ -309,25 +325,24 @@ public class DistributedKeyValueStore {
         client.tell(msg, ActorRef.noSender());
     }
 
-    // ----- Getters ----- //
+    /**
+     * getDataNode
+     * Get the data node stored at index i
+     * @param i the index
+     * @return the ActorRef of the data node
+     */
     public ActorRef getDataNode(int i) {
         return this.dataNodes.get(i).getActorRef();
     }
+
+    /**
+     * getClient
+     * get the client stored at index i
+     * @param i the index
+     * @return the ActorRef of the client
+     */
     public ActorRef getClient(int i) {
         return this.clients.get(i);
     }
-
-    /* Old way to create data nodes
-     Random rand = new Random(1337);
-     int nodeKey = 1;
-     int maxNodeKey = 1;
-     for (int i = 0; i < dataNodesCount; i++) {
-     ActorRef actorRef = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, nodeKey), "datanode" + i);
-     group.add(new DataNodeRef(nodeKey, actorRef));
-
-     maxNodeKey = nodeKey;
-     nodeKey += rand.nextInt(8, 15);
-     }
-     */
 
 }
