@@ -29,7 +29,7 @@ public class Main {
         /* Instantiate a new distributed key-value store */
         Logs.printStartupInfo(N, W, R, dataNodeCount, clientCount);
         DistributedKeyValueStore database = new DistributedKeyValueStore(
-                "DKVSystem", N, W, R, dataNodeCount, clientCount);
+                "DKVSystem", N, W, R, T, dataNodeCount, clientCount);
 
         Thread.sleep(1000); // wait for startup
 

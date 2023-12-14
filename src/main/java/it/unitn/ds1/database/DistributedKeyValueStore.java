@@ -13,7 +13,6 @@ import it.unitn.ds1.actors.DataNode.AskToLeave;
 import it.unitn.ds1.actors.DataNode.AskCrash;
 import it.unitn.ds1.actors.DataNode.AskRecover;
 import it.unitn.ds1.managers.GroupManager.DataNodeRef;
-import it.unitn.ds1.logger.Logs;
 
 /**
  * DistributedKeyValueStore
@@ -23,7 +22,7 @@ public class DistributedKeyValueStore {
     private final int N; // number of replicas
     private final int W; // write quorum
     private final int R; // read quorum
-    private final int T = 1000; // max timeout
+    private final int T; // max timeout
     private final ActorSystem actorSystem;
     private final List<DataNodeRef> dataNodes;
     private final List<ActorRef> clients;
@@ -35,11 +34,26 @@ public class DistributedKeyValueStore {
      * @param N number of replicas
      * @param W write quorum
      * @param R read quorum
+     * @param T timeout
      */
-    public DistributedKeyValueStore(String systemName, int N, int W, int R) {
+    public DistributedKeyValueStore(String systemName, int N, int W, int R, int T) {
         this.N = N;
         this.W = W;
         this.R = R;
+        this.T = T;
+
+        if (W > N || R > N) {
+            System.out.println("ERROR: W or R are greater than N");
+            System.exit(0);
+        } else if (N > 10) {
+            System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        }
+
+        if (T < 1000) {
+            System.out.println("ERROR: T should be at least 1000ms");
+            System.exit(0);
+        }
 
         this.actorSystem = ActorSystem.create(systemName);
         this.dataNodes = new ArrayList<DataNodeRef>();
@@ -83,19 +97,26 @@ public class DistributedKeyValueStore {
      * @param N number of replicas
      * @param W write quorum
      * @param R read quorum
+     * @param T timeout
      * @param dataNodeCount number of data nodes
      * @param clientCount number of clients
      */
-    public DistributedKeyValueStore(String systemName, int N, int W, int R, int dataNodeCount, int clientCount) {
+    public DistributedKeyValueStore(String systemName, int N, int W, int R, int T, int dataNodeCount, int clientCount) {
         this.N = N;
         this.W = W;
         this.R = R;
+        this.T = T;
 
         if (W > N || R > N) {
             System.out.println("ERROR: W or R are greater than N");
             System.exit(0);
         } else if (N > dataNodeCount) {
             System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        }
+
+        if (T < 1000) {
+            System.out.println("ERROR: T should be at least 1000ms");
             System.exit(0);
         }
 
