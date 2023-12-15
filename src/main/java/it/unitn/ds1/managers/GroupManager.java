@@ -161,18 +161,18 @@ public class GroupManager {
     }
 
     /**
-     * Get the reference of a clockwise neighbor for a given data node.
-     * @param dataKey the key of the data node.
-     * @return the reference of a clockwise neighbor for the given data node.
+     * Get the reference of a clockwise neighbor for a given dataKey.
+     * @param dataKey the key of the data.
+     * @return the reference of a clockwise neighbor for the given dataKey.
      */
     public ActorRef getClockwiseNeighbor(Integer dataKey) {
         return this.group.get(getIndex(dataKey + 1)).getActorRef();
     }
 
     /**
-     * TODO ??
-     * @param dataKey the key of the data node.
-     * @return TODO ??
+     * Find the index of the first datanode in the group responsible for the specified dataKey
+     * @param dataKey the key of the data.
+     * @return the index of the first responsible dataNode
      */
     private int getIndex(Integer dataKey) {
         int i = 0;

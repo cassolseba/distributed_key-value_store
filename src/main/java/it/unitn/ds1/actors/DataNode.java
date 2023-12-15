@@ -617,7 +617,7 @@ public class DataNode extends AbstractActor {
     /**
      * TimeoutRecover
      * A message that returns a timeout during a recover operation.
-     * It is sent by TODO
+     * It is sent by the recovering node to itself to start the timeout for the recovery action
      */
     public static class TimeoutRecover implements Serializable {
         public TimeoutRecover() {
@@ -627,7 +627,7 @@ public class DataNode extends AbstractActor {
     /**
      * TimeoutSendVersion
      * A message that returns a timeout while waiting for the version
-     * It is sent by TODO
+     * It is sent by the node asking the version to itself to start the timeout for the action of asking the version during the update procedure
      */
     public static class TimeoutSendVersion implements Serializable {
         public Integer key;
@@ -687,7 +687,6 @@ public class DataNode extends AbstractActor {
             // logging
             Logs.write(msg.key, elem.getValue(), Helper.getName(getSender()), Helper.getName(self()));
         } else {
-            // TODO handle existing key error
             Logs.error(ErrorType.EXISTING_KEY, msg.key, Helper.getName(self()));
         }
     }

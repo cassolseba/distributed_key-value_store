@@ -53,7 +53,6 @@ public class Main {
         Thread.sleep(2500); // wait for datanode references
 
         /* Insert some data in the distributed database */
-        // TODO initial data items should be inserted using the update method
         Logs.printDataInit();
         database.sendWriteFromClient(firstClient, firstDataNode, 5, "FIVE");
         database.sendWriteFromClient(firstClient, firstDataNode, 17, "SEVENTEEN");
