@@ -17,11 +17,11 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 4;
-    private static final int W = 3;
-    private static final int R = 2;
+    private static final int N = 6;
+    private static final int W = 5;
+    private static final int R = 3;
     private static final int T = 5000;
-    private static final int dataNodeCount = 6;
+    private static final int dataNodeCount = 10;
     private static final int clientCount = 4;
 
     public static void main(String[] args) throws InterruptedException {

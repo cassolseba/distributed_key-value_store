@@ -67,7 +67,7 @@ public class RequestManager {
             valueMap.put(data.getVersion(), data.getValue());
             counterMap.put(data.getVersion(), counterMap.getOrDefault(data.getVersion(), 0) + 1);
 
-            if (counterMap.get(data.getVersion()) > quorumVal) {
+            if (counterMap.get(data.getVersion()) >= quorumVal) {
                 quoredValue = valueMap.get(data.getVersion());
                 return true;
             } else
@@ -131,7 +131,7 @@ public class RequestManager {
             totalCounter++;
             counterMap.put(version, counterMap.getOrDefault(version, 0) + 1);
 
-            if (counterMap.get(version) > quorumVal) {
+            if (counterMap.get(version) >= quorumVal) {
                 quoredVersion = version;
                 return true;
             } else
