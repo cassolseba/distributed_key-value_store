@@ -3,7 +3,9 @@ package it.unitn.ds1.actors;
 import java.io.Serializable;
 
 import akka.actor.*;
+import com.sun.tools.jconsole.JConsoleContext;
 import it.unitn.ds1.actors.DataNode.*;
+import it.unitn.ds1.logger.ErrorType;
 import it.unitn.ds1.logger.Logs;
 import it.unitn.ds1.logger.TimeoutType;
 import it.unitn.ds1.utils.Helper;
@@ -15,6 +17,7 @@ import it.unitn.ds1.utils.Helper;
 public class ClientNode extends AbstractActor {
     // used to identify a message
     private Integer Id = 0;
+    private boolean isBusy = false;
 
     public ClientNode() {
         System.out.println("CLIENT: is " + Helper.getName(self()));
@@ -83,11 +86,17 @@ public class ClientNode extends AbstractActor {
      * @see ClientWrite
      */
     public void onClientWrite(ClientWrite msg) {
-        AskWriteData data = new AskWriteData(msg.key, msg.value);
-        msg.coordinator.tell(data, self());
+        if (!this.isBusy) {
+            this.isBusy = true;
+            AskWriteData data = new AskWriteData(msg.key, msg.value);
+            msg.coordinator.tell(data, self());
 
-        // logging
-        Logs.client_write(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
+            // logging
+            Logs.client_write(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
+            this.isBusy = false;
+        } else {
+            Logs.error(ErrorType.CLIENT_BUSY, msg.key, Helper.getName(self()));
+        }
     }
 
     /**
@@ -96,15 +105,18 @@ public class ClientNode extends AbstractActor {
      * @see ClientRead
      */
     public void onClientRead(ClientRead msg) {
-        String requestId = self().path() + "/" + this.Id.toString();
-        this.Id++;
-        AskReadData data = new AskReadData(msg.key, requestId);
-        // System.out.println("Client " + self().path() + ",
-        // create read request["requestId + "]" + " for key:" + msg.key);
-        msg.coordinator.tell(data, self());
+        if (!this.isBusy) {
+            this.isBusy = true;
+            String requestId = self().path() + "/" + this.Id.toString();
+            this.Id++;
+            AskReadData data = new AskReadData(msg.key, requestId);
+            msg.coordinator.tell(data, self());
 
-        // logging
-        Logs.client_read(msg.key, Helper.getName(self()), msg.coordinator.path().name());
+            // logging
+            Logs.client_read(msg.key, Helper.getName(self()), msg.coordinator.path().name());
+        } else {
+            Logs.error(ErrorType.CLIENT_BUSY, msg.key, Helper.getName(self()));
+        }
     }
 
     /**
@@ -113,7 +125,7 @@ public class ClientNode extends AbstractActor {
      * @see SendRead2Client
      */
     public void onSendRead2Client(SendRead2Client msg) {
-        // System.out.println("Client " + self().path() + " received value: " + msg.value);
+        this.isBusy = false;
 
         // logging
         Logs.read_reply_on_client(msg.value, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
@@ -125,15 +137,18 @@ public class ClientNode extends AbstractActor {
      * @see ClientUpdate
      */
     public void onClientUpdate(ClientUpdate msg) {
-        String requestId = self().path() + "/" + this.Id.toString();
-        this.Id++;
-        AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
-        // System.out.println("Client " + self().path() + ", create update request["
-        // + requestId + "]" + " for key:" + msg.key + " with value:" + msg.value);
-        msg.coordinator.tell(data, self());
+        if (!this.isBusy) {
+            this.isBusy = true;
+            String requestId = self().path() + "/" + this.Id.toString();
+            this.Id++;
+            AskUpdateData data = new AskUpdateData(msg.key, msg.value, requestId);
+            msg.coordinator.tell(data, self());
 
-        // logging
-        Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
+            // logging
+            Logs.client_update(msg.key, msg.value, Helper.getName(self()), msg.coordinator.path().name());
+        } else {
+            Logs.error(ErrorType.CLIENT_BUSY, msg.key, Helper.getName(self()));
+        }
     }
 
     /**
@@ -143,9 +158,10 @@ public class ClientNode extends AbstractActor {
      * @see ReturnUpdate
      */
     public void onReturnUpdate(ReturnUpdate msg) {
+        this.isBusy = false;
+
         // logging
         Logs.update_reply_on_client(msg.version, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
-        //System.out.println("Client " + self().path() + " received version: " + msg.version);
     }
 
     /**
@@ -154,7 +170,7 @@ public class ClientNode extends AbstractActor {
      * @see ReturnTimeoutOnRead
      */
     public void onReturnTimeoutOnRead(ReturnTimeoutOnRead msg) {
-        // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+        this.isBusy = false;
 
         // logging
         Logs.timeout(TimeoutType.READ, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
@@ -166,7 +182,7 @@ public class ClientNode extends AbstractActor {
      * @see ReturnTimeoutOnWrite
      */
     public void onReturnTimeoutOnWrite(ReturnTimeoutOnWrite msg) {
-        // System.out.println("Client " + self().path() + " timeout on " + msg.requestId + " reading request");
+        this.isBusy = false;
 
         // logging
         Logs.timeout(TimeoutType.WRITE, msg.requestId, Helper.getName(getSender()), Helper.getName(self()));
