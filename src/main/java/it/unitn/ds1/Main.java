@@ -18,7 +18,7 @@ import java.io.IOException;
 public class Main {
 
     private static final int N = 4;
-    private static final int W = 2;
+    private static final int W = 3;
     private static final int R = 2;
     private static final int T = 1000;
     private static final int dataNodeCount = 6;

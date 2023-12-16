@@ -48,7 +48,6 @@ public class DistributedKeyValueStore {
         } else if (N > 10) {
             System.out.println("ERROR: N is greater than the number of data nodes");
             System.exit(0);
-        }
         } else if (R + W <= N || W <= roundUp(N,2)) {
             System.out.println("ERROR: Constrains not satisfied");
             System.exit(0);
