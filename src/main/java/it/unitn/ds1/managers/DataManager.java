@@ -129,15 +129,6 @@ public class DataManager {
                             : oldValue);
             blocks.putIfAbsent(entry.getKey(), false);
         }
-//        for (Map.Entry e : newData.entrySet()) {
-//            if (!storage.containsKey(e.getKey())) {
-//                storage.put(e.getKey(), e.getValue());
-//            } else {
-//                if (e.getValue().isNewer(storage.get(e.getKeys()))) {
-//                    storage.put(e.getKey(), e.getValue());
-//                }
-//            }
-//        }
     }
 
     /**
