@@ -322,6 +322,7 @@ public class Logs {
             case LOCKED_KEY -> printLog(MessageType.LOCKED_KEY_ERROR, msg);
             case UNKNOWN_KEY -> printLog(MessageType.UNKNOWN_KEY_ERROR, msg);
             case EXISTING_KEY -> printLog(MessageType.EXISTING_KEY_ERROR, msg);
+            case CLIENT_BUSY -> printLog(MessageType.CLIENT_BUSY_ERROR, msg);
             default -> {}
         }
     }
