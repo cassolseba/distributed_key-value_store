@@ -17,9 +17,9 @@ import java.io.IOException;
 
 public class Main {
 
-    private static final int N = 6;
-    private static final int W = 5;
-    private static final int R = 3;
+    private static final int N = 2;
+    private static final int W = 2;
+    private static final int R = 2;
     private static final int T = 5000;
     private static final int dataNodeCount = 10;
     private static final int clientCount = 4;
@@ -166,14 +166,18 @@ public class Main {
 
         /* ---- CRASH & RECOVER ---- */
         // test 18: crash a node and recover
-        Logs.printRunTest(18, "crash a node and recover");
-        database.crash(firstDataNode);
-        inputContinue();
-        database.sendUpdateFromClient(firstClient, secondDataNode, 5, "51");
-        inputContinue();
-        database.statusMessage(secondClient);
-        inputContinue();
-        database.recover(firstDataNode, secondDataNode);
+//        Logs.printRunTest(18, "crash a node and recover");
+//        database.crash(firstDataNode);
+//        inputContinue();
+//        database.sendUpdateFromClient(firstClient, secondDataNode, 5, "51");
+//        inputContinue();
+//        database.statusMessage(secondClient);
+//        inputContinue();
+//        database.recover(firstDataNode, secondDataNode);
+
+        /* ---- LEAVE AND DATA SHIFT ---- */
+        // test 17: leave (N=2,W=2,R=2)
+        database.leave(firstDataNode);
 
 
         /* ---- END PHASE ---- */
