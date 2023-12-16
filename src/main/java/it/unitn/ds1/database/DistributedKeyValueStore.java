@@ -49,6 +49,10 @@ public class DistributedKeyValueStore {
             System.out.println("ERROR: N is greater than the number of data nodes");
             System.exit(0);
         }
+        } else if (R + W <= N || W <= roundUp(N,2)) {
+            System.out.println("ERROR: Constrains not satisfied");
+            System.exit(0);
+        }
 
         if (T < 1000) {
             System.out.println("ERROR: T should be at least 1000ms");
@@ -112,6 +116,9 @@ public class DistributedKeyValueStore {
             System.exit(0);
         } else if (N > dataNodeCount) {
             System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        } else if (R + W <= N || W <= roundUp(N,2)) {
+            System.out.println("ERROR: Constrains not satisfied");
             System.exit(0);
         }
 
@@ -364,6 +371,17 @@ public class DistributedKeyValueStore {
      */
     public ActorRef getClient(int i) {
         return this.clients.get(i);
+    }
+
+
+    /**
+     * roundUp
+     * round up integer division both parameters must be positive
+     * @param num the number, divisor the divisor
+     * @return rounded up division
+     */
+    private static long roundUp(long num, long divisor) {
+        return (num + divisor - 1) / divisor;
     }
 
 }

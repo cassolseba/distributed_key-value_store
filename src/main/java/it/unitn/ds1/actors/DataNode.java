@@ -1083,9 +1083,6 @@ public class DataNode extends AbstractActor {
      */
     public void onNewData(NewData msg) {
         nodeData.putNewData(msg.key, msg.data);
-
-        // logging
-        // TODO
     }
 
     /* ------- CRASH ------- */
