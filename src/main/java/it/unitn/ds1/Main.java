@@ -79,7 +79,6 @@ public class Main {
 //        Logs.printRunTest(2, "read from an unknown key");
 //        database.sendReadFromClient(firstClient, firstDataNode, 21);
 
-
         // test 3: read a key from two different clients
 //        Logs.printRunTest(3, "read a key from two different clients");
 //        database.sendReadFromClient(firstClient, firstDataNode, 17);
@@ -145,13 +144,13 @@ public class Main {
 
         // test 15: update a key two times and read from two different clients
 //        Logs.printRunTest(15, "update a key two times and read from two different clients");
-//        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "51");
-//        inputContinue();
-//        database.sendUpdateFromClient(secondClient, secondDataNode, 5, "52");
-//        inputContinue();
-//        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
-//        inputContinue();
-//        database.sendReadFromClient(fourthClient, fourthDataNode, 5);
+        database.sendUpdateFromClient(firstClient, firstDataNode, 5, "51");
+        inputContinue();
+        database.sendUpdateFromClient(secondClient, secondDataNode, 5, "52");
+        inputContinue();
+        database.sendReadFromClient(thirdClient, thirdDataNode, 5);
+        inputContinue();
+        database.sendReadFromClient(fourthClient, fourthDataNode, 5);
 
         /* ---- JOIN ---- */
         // test 16: join new node
@@ -164,9 +163,13 @@ public class Main {
 //        Logs.printRunTest(17, "leave");
 //        database.leave(secondDataNode);
 
+        // test 18: leave and shift (use N=2,W=2,R=2)
+//        Logs.printRunTest(17, "leave and shift");
+//        database.leave(firstDataNode);
+
         /* ---- CRASH & RECOVER ---- */
-        // test 18: crash a node and recover
-//        Logs.printRunTest(18, "crash a node and recover");
+        // test 19: crash a node and recover
+//        Logs.printRunTest(19, "crash a node and recover");
 //        database.crash(firstDataNode);
 //        inputContinue();
 //        database.sendUpdateFromClient(firstClient, secondDataNode, 5, "51");
@@ -174,11 +177,6 @@ public class Main {
 //        database.statusMessage(secondClient);
 //        inputContinue();
 //        database.recover(firstDataNode, secondDataNode);
-
-        /* ---- LEAVE AND DATA SHIFT ---- */
-        // test 17: leave (N=2,W=2,R=2)
-        database.leave(firstDataNode);
-
 
         /* ---- END PHASE ---- */
         inputContinue();
@@ -188,8 +186,6 @@ public class Main {
 
         inputContinue();
         System.exit(0);
-
-
     }
 
     public static void inputContinue() {
