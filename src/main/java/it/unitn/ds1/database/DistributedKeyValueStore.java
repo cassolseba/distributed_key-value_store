@@ -13,7 +13,6 @@ import it.unitn.ds1.actors.DataNode.AskToLeave;
 import it.unitn.ds1.actors.DataNode.AskCrash;
 import it.unitn.ds1.actors.DataNode.AskRecover;
 import it.unitn.ds1.managers.GroupManager.DataNodeRef;
-import it.unitn.ds1.logger.Logs;
 
 /**
  * DistributedKeyValueStore
@@ -23,22 +22,41 @@ public class DistributedKeyValueStore {
     private final int N; // number of replicas
     private final int W; // write quorum
     private final int R; // read quorum
-    private final int T = 1000; // max timeout
+    private final int T; // max timeout
     private final ActorSystem actorSystem;
     private final List<DataNodeRef> dataNodes;
     private final List<ActorRef> clients;
 
     /**
+     * DistributedKeyValueStore
      * Constructor with fixed data nodes and clients, useful for testing
      * @param systemName name of the actor system
      * @param N number of replicas
      * @param W write quorum
      * @param R read quorum
+     * @param T timeout
      */
-    public DistributedKeyValueStore(String systemName, int N, int W, int R) {
+    public DistributedKeyValueStore(String systemName, int N, int W, int R, int T) {
         this.N = N;
         this.W = W;
         this.R = R;
+        this.T = T;
+
+        if (W > N || R > N) {
+            System.out.println("ERROR: W or R are greater than N");
+            System.exit(0);
+        } else if (N > 10) {
+            System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        } else if (R + W <= N || W <= roundUp(N,2)) {
+            System.out.println("ERROR: Constrains not satisfied");
+            System.exit(0);
+        }
+
+        if (T < 1000) {
+            System.out.println("ERROR: T should be at least 1000ms");
+            System.exit(0);
+        }
 
         this.actorSystem = ActorSystem.create(systemName);
         this.dataNodes = new ArrayList<DataNodeRef>();
@@ -76,24 +94,35 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * DistributedKeyValueStore
      * Constructor with variable data nodes and clients, defined in class Main
      * @param systemName name of the actor system
      * @param N number of replicas
      * @param W write quorum
      * @param R read quorum
+     * @param T timeout
      * @param dataNodeCount number of data nodes
      * @param clientCount number of clients
      */
-    public DistributedKeyValueStore(String systemName, int N, int W, int R, int dataNodeCount, int clientCount) {
+    public DistributedKeyValueStore(String systemName, int N, int W, int R, int T, int dataNodeCount, int clientCount) {
         this.N = N;
         this.W = W;
         this.R = R;
+        this.T = T;
 
         if (W > N || R > N) {
             System.out.println("ERROR: W or R are greater than N");
             System.exit(0);
         } else if (N > dataNodeCount) {
             System.out.println("ERROR: N is greater than the number of data nodes");
+            System.exit(0);
+        } else if (R + W <= N || W <= roundUp(N,2)) {
+            System.out.println("ERROR: Constrains not satisfied");
+            System.exit(0);
+        }
+
+        if (T < 1000) {
+            System.out.println("ERROR: T should be at least 1000ms");
             System.exit(0);
         }
 
@@ -105,6 +134,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initDataNodes
      * Initialize data nodes with keys 10, 20, 30, 40, 50, ... and name DATA1, DATA2, DATA3, ...
      * @param dataNodesCount number of data nodes
      * @return a list of data nodes
@@ -123,6 +153,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initClients
      * Initialize clients with names CLIENT1, CLIENT2, CLIENT3, ...
      * @param clientCount number of clients
      * @return a list of clients
@@ -137,13 +168,10 @@ public class DistributedKeyValueStore {
     }
 
     /**
-     * create a new data node
+     * createDataNode
+     * Create a new data node
      * @param name name of the new data node
      * @param key key of the new data node
-     * @param W write quorum
-     * @param R read quorum
-     * @param N number of replicas
-     * @param T max timeout
      * @return the actor reference of the new data node
      */
     public ActorRef createDataNode(String name, int key) {
@@ -151,8 +179,9 @@ public class DistributedKeyValueStore {
     }
 
     /**
-     * create a new client
-     * @param name name of the new client
+     * createClientNode
+     * Create a new client
+     * @param name the name of the new client
      * @return the actor reference of the new client
      */
     public ActorRef createClientNode(String name) {
@@ -160,6 +189,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * connectDataNodes
      * Send the group of data nodes to all the nodes in the system
      */
     private void connectDataNodes() {
@@ -169,6 +199,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * writeData
      * Write a new key-value pair in the distributed database, useful for testing and initializing the system
      * @param key the new key
      * @param value the new value
@@ -180,6 +211,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * initRandomData
      * Write in the database random key-value pairs, useful for testing and initializing the system
      * @param dataCount number of key-value pairs to write
      */
@@ -194,6 +226,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getRandomDataNode
      * Get a random data node from the system
      * @return an actor reference to random data node
      */
@@ -203,8 +236,9 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getRandomClient
      * Get a random client from the system
-     * @return an actor reference to random client
+     * @return an actor reference to a random client
      */
     public ActorRef getRandomClient() {
         Random rand = new Random();
@@ -212,6 +246,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * getMaxKey
      * Get the higher node key in the database
      * @return the higher node key
      */
@@ -228,6 +263,7 @@ public class DistributedKeyValueStore {
     // ----- Messages ----- //
 
     /**
+     * sendWriteFromClient
      * Send a Write request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -240,6 +276,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * sendReadFromClient
      * Send a Read request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -251,6 +288,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * sendUpdateFromClient
      * Send an Update request to the database
      * @param client the client that sends the request
      * @param coordinator the coordinator of the request
@@ -263,6 +301,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * join
      * Send a join request to the system
      * @param joiningNode the node that wants to join
      * @param bootstrappingNode the node that helps the joining node
@@ -273,6 +312,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * leave
      * Send a leave request to the system
      * @param leavingNode the node that wants to leave
      */
@@ -282,6 +322,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * crash
      * Tell a node to crash
      * @param crashingNode the node that crashes
      */
@@ -291,6 +332,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * recover
      * Tell a node to recover
      * @param crashedNode the node that crashed
      * @param bootstrappingNode the node that helps the crashed node to recover
@@ -301,6 +343,7 @@ public class DistributedKeyValueStore {
     }
 
     /**
+     * statusMessage
      * Send a status request to the system
      * @param client the client that sends the request
      */
@@ -309,25 +352,35 @@ public class DistributedKeyValueStore {
         client.tell(msg, ActorRef.noSender());
     }
 
-    // ----- Getters ----- //
+    /**
+     * getDataNode
+     * Get the data node stored at index i
+     * @param i the index
+     * @return the ActorRef of the data node
+     */
     public ActorRef getDataNode(int i) {
         return this.dataNodes.get(i).getActorRef();
     }
+
+    /**
+     * getClient
+     * get the client stored at index i
+     * @param i the index
+     * @return the ActorRef of the client
+     */
     public ActorRef getClient(int i) {
         return this.clients.get(i);
     }
 
-    /* Old way to create data nodes
-     Random rand = new Random(1337);
-     int nodeKey = 1;
-     int maxNodeKey = 1;
-     for (int i = 0; i < dataNodesCount; i++) {
-     ActorRef actorRef = system.actorOf(DataNode.props(W_quorum, R_quorum, N_replica, maxTimeout, nodeKey), "datanode" + i);
-     group.add(new DataNodeRef(nodeKey, actorRef));
 
-     maxNodeKey = nodeKey;
-     nodeKey += rand.nextInt(8, 15);
-     }
+    /**
+     * roundUp
+     * round up integer division both parameters must be positive
+     * @param num the number, divisor the divisor
+     * @return rounded up division
      */
+    private static long roundUp(long num, long divisor) {
+        return (num + divisor - 1) / divisor;
+    }
 
 }

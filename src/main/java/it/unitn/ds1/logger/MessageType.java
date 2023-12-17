@@ -35,6 +35,7 @@ public enum MessageType {
     UNKNOWN_KEY_ERROR,
     EXISTING_KEY_ERROR,
     LOCKED_KEY_ERROR,
+    CLIENT_BUSY_ERROR
     ;
 
     @Override
@@ -141,6 +142,9 @@ public enum MessageType {
             }
             case LOCKED_KEY_ERROR -> {
                 return "LOCKED_KEY_ERROR";
+            }
+            case CLIENT_BUSY_ERROR -> {
+                return "CLIENT_BUSY_ERROR";
             }
             default -> {
                 return "";

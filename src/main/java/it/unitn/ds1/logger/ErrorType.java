@@ -4,6 +4,7 @@ public enum ErrorType {
     LOCKED_KEY,
     UNKNOWN_KEY,
     EXISTING_KEY,
+    CLIENT_BUSY,
     ;
 
     @Override
@@ -17,6 +18,9 @@ public enum ErrorType {
             }
             case EXISTING_KEY -> {
                 return "EXISTING_KEY";
+            }
+            case CLIENT_BUSY -> {
+                return "CLIENT_BUSY";
             }
             default -> {
                 return "";
